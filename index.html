@@ -116,12 +116,12 @@
                     a = Math.floor(Math.random() * 9) + 1;
                     b = Math.floor(Math.random() * (10 - a)) + 1;
                     ans = a + b;
-                    return Math.random() > 0.5 ? { q: `\\Box + ${b} = ${ans}`, a: `\\Box = ${a}` } : { q: `${a} + \\Box = ${ans}`, a: `\\Box = ${b}` };
+                    return Math.random() > 0.5 ? { q: `□ + ${b} = ${ans}`, a: `□ = ${a}` } : { q: `${a} + □ = ${ans}`, a: `□ = ${b}` };
                 } else {
                     a = Math.floor(Math.random() * 10) + 1;
                     b = Math.floor(Math.random() * a) + 1;
                     ans = a - b;
-                    return Math.random() > 0.5 ? { q: `\\Box - ${b} = ${ans}`, a: `\\Box = ${a}` } : { q: `${a} - \\Box = ${ans}`, a: `\\Box = ${b}` };
+                    return Math.random() > 0.5 ? { q: `□ - ${b} = ${ans}`, a: `□ = ${a}` } : { q: `${a} - □ = ${ans}`, a: `□ = ${b}` };
                 }
             } else {
                 let a, b, ans;
@@ -134,7 +134,7 @@
                     b = Math.floor(Math.random() * a) + 1;
                     ans = a - b;
                 }
-                return { q: `${ans} = ${a} ${op} \\Box`, a: `\\Box = ${b}` };
+                return { q: `${ans} = ${a} ${op} □`, a: `□ = ${b}` };
             }
         };
 
@@ -160,12 +160,12 @@
                     let a = Math.floor(Math.random() * 8) + 2;
                     let b = Math.floor(Math.random() * 8) + 2;
                     if (a + b < 11) b += 5;
-                    return Math.random() > 0.5 ? { q: `\\Box + ${b} = ${a + b}`, a: `\\Box = ${a}` } : { q: `${a} + \\Box = ${a + b}`, a: `\\Box = ${b}` };
+                    return Math.random() > 0.5 ? { q: `□ + ${b} = ${a + b}`, a: `□ = ${a}` } : { q: `${a} + □ = ${a + b}`, a: `□ = ${b}` };
                 } else {
                     let b = Math.floor(Math.random() * 8) + 2;
                     let ans = Math.floor(Math.random() * 8) + 2;
                     let a = b + ans;
-                    return Math.random() > 0.5 ? { q: `\\Box - ${b} = ${ans}`, a: `\\Box = ${a}` } : { q: `${a} - \\Box = ${ans}`, a: `\\Box = ${b}` };
+                    return Math.random() > 0.5 ? { q: `□ - ${b} = ${ans}`, a: `□ = ${a}` } : { q: `${a} - □ = ${ans}`, a: `□ = ${b}` };
                 }
             } else {
                 let a = Math.floor(Math.random() * 8) + 2;
@@ -268,7 +268,8 @@
             } else {
                 let a = Math.floor(Math.random() * 8) + 2; 
                 let b = Math.floor(Math.random() * 8) + 2; 
-                return Math.random() > 0.5 ? { q: `\\Box \\times ${b} = ${a * b}`, a: `\\Box = ${a}` } : { q: `${a} \\times \\Box = ${a * b}`, a: `\\Box = ${b}` };
+                let ans = a * b;
+                return Math.random() > 0.5 ? { q: `□ \\times ${b} = ${ans}`, a: `□ = ${a}` } : { q: `${a} \\times □ = ${ans}`, a: `□ = ${b}` };
             }
         };
 
@@ -360,14 +361,14 @@
                 let c = Math.floor(Math.random() * 8) + 1; 
                 let r = Math.floor(Math.random() * (b - 1)) + 1; 
                 let a = b * c + r;
-                return { q: `${a} \\div ${b} = `, a: `${c} \\text{ あまり } ${r}` };
+                return { q: `${a} \\div ${b} = `, a: `${c} あまり ${r}` };
             } else {
                 let b = Math.floor(Math.random() * 7) + 3; 
                 let c = Math.floor(Math.random() * 15) + 10; 
                 let r = Math.floor(Math.random() * b); 
                 let a = b * c + r;
                 if (a >= 100) { a = 99; c = Math.floor(a / b); r = a % b; }
-                return { q: `${a} \\div ${b} = `, a: r === 0 ? `${c}` : `${c} \\text{ あまり } ${r}` };
+                return { q: `${a} \\div ${b} = `, a: r === 0 ? `${c}` : `${c} あまり ${r}` };
             }
         };
 
@@ -393,6 +394,18 @@
             let q_n2 = `\\frac{${n2}}{${d}}`;
 
             return { q: `${q_n1} ${op} ${q_n2} = `, a: `${formatFrac(ansN, d)}` };
+        };
+
+        const decimal_add_sub_3rd = (diff) => {
+            let op = Math.random() > 0.5 ? '+' : '-';
+            let a = Math.floor(Math.random() * 98) + 1; // 0.1 to 9.9
+            let b = Math.floor(Math.random() * 98) + 1;
+            if (op === '-') {
+                if (a < b) { let t = a; a = b; b = t; }
+                if (a === b) a++;
+            }
+            let ans = op === '+' ? a + b : a - b;
+            return { q: `${a / 10} ${op} ${b / 10} = `, a: `${ans / 10}` };
         };
 
         // 小学4年
@@ -442,7 +455,7 @@
                 let b = Math.floor(Math.random() * 70) + 20; 
                 let r = Math.floor(Math.random() * (b - 1)) + 1;
                 let a = b * c + r;
-                return { q: `${a} \\div ${b} = `, a: `${c} \\text{ あまり } ${r}` };
+                return { q: `${a} \\div ${b} = `, a: `${c} あまり ${r}` };
             } else {
                 let c = Math.floor(Math.random() * 40) + 11; 
                 let b = Math.floor(Math.random() * 15) + 12; 
@@ -451,7 +464,7 @@
                 if (a >= 1000) a = 999;
                 c = Math.floor(a / b);
                 r = a % b;
-                return { q: `${a} \\div ${b} = `, a: r === 0 ? `${c}` : `${c} \\text{ あまり } ${r}` };
+                return { q: `${a} \\div ${b} = `, a: r === 0 ? `${c}` : `${c} あまり ${r}` };
             }
         };
 
@@ -531,7 +544,7 @@
                     let c = Math.floor(Math.random() * 8) + 2; 
                     let r = (Math.floor(Math.random() * (b * 10 - 1)) + 1) / 10;
                     let a = Math.round((b * c + r) * 10) / 10;
-                    return { q: `${a} \\div ${b} \\quad \\text{(商は整数で求め、あまりもだす)}`, a: `${c} \\text{ あまり } ${r}` };
+                    return { q: `${a} \\div ${b} 　(商は整数で求め、あまりもだす)`, a: `${c} あまり ${r}` };
                 }
             }
         };
@@ -621,7 +634,27 @@
             }
         };
 
-        // 小学6年
+        const per_unit_quantity = (diff) => {
+            let items = [
+                { name: 'ジュース', unit1: 'mL', unit2: '円' },
+                { name: 'リボン', unit1: 'm', unit2: '円' },
+                { name: '針金', unit1: 'm', unit2: 'g' }
+            ];
+            let item = items[Math.floor(Math.random() * items.length)];
+            let basePrice = Math.floor(Math.random() * 50) + 20; // 100単位あたり 20~69
+            let qty1 = (Math.floor(Math.random() * 8) + 2) * 50; // 100, 150, 200, ...
+            let price1 = (qty1 / 100) * basePrice;
+            
+            let target = 1;
+            if (item.unit1 === 'mL') target = 1000;
+            
+            return { 
+                q: `${qty1}${item.unit1}で${price1}${item.unit2}の${item.name}があります。${target}${item.unit1}あたり何${item.unit2}ですか。`, 
+                a: `${(target / 100) * basePrice}${item.unit2}` 
+            };
+        };
+
+        // 小学6年・中学入試
         const fraction_mul_div = (diff) => {
             let op = Math.random() > 0.5 ? '\\times' : '\\div';
             
@@ -674,7 +707,7 @@
                 let num = a / g;
                 let den = b / g;
                 let ans = den === 1 ? `${num}` : `\\frac{${num}}{${den}}`;
-                return { q: `${a} : ${b} \\quad \\text{の比の値を求めなさい}`, a: ans };
+                return { q: `${a} : ${b} 　の比の値を求めなさい`, a: ans };
             } else if (diff === 'normal') {
                 let type = Math.floor(Math.random() * 3);
                 if (type === 0) { 
@@ -682,14 +715,14 @@
                     let a = Math.floor(Math.random() * 8) + 1;
                     let b = Math.floor(Math.random() * 8) + 1;
                     if (a === b) b++;
-                    return { q: `${a * g} : ${b * g} \\quad \\text{を簡単な整数の比にしなさい}`, a: `${a / gcd(a, b)} : ${b / gcd(a, b)}` };
+                    return { q: `${a * g} : ${b * g} 　を簡単な整数の比にしなさい`, a: `${a / gcd(a, b)} : ${b / gcd(a, b)}` };
                 } else if (type === 1) { 
                     let a = Math.floor(Math.random() * 8) + 1;
                     let b = Math.floor(Math.random() * 8) + 1;
                     if (a === b) b++;
                     let decA = a / 10;
                     let decB = b / 10;
-                    return { q: `${decA} : ${decB} \\quad \\text{を簡単な整数の比にしなさい}`, a: `${a / gcd(a, b)} : ${b / gcd(a, b)}` };
+                    return { q: `${decA} : ${decB} 　を簡単な整数の比にしなさい`, a: `${a / gcd(a, b)} : ${b / gcd(a, b)}` };
                 } else { 
                     let d1 = Math.floor(Math.random() * 5) + 2;
                     let d2 = Math.floor(Math.random() * 5) + 2;
@@ -697,7 +730,7 @@
                     let n2 = 1;
                     let a = n1 * d2;
                     let b = n2 * d1;
-                    return { q: `\\frac{${n1}}{${d1}} : \\frac{${n2}}{${d2}} \\quad \\text{を簡単な整数の比にしなさい}`, a: `${a / gcd(a, b)} : ${b / gcd(a, b)}` };
+                    return { q: `\\frac{${n1}}{${d1}} : \\frac{${n2}}{${d2}} 　を簡単な整数の比にしなさい`, a: `${a / gcd(a, b)} : ${b / gcd(a, b)}` };
                 }
             } else {
                 let a = Math.floor(Math.random() * 8) + 2;
@@ -705,9 +738,9 @@
                 if (a === b) b++;
                 let m = Math.floor(Math.random() * 5) + 2;
                 if (Math.random() > 0.5) {
-                    return { q: `${a} : ${b} = x : ${b * m} \\quad \\text{xを求めなさい}`, a: `x = ${a * m}` };
+                    return { q: `${a} : ${b} = x : ${b * m} 　の x を求めなさい`, a: `x = ${a * m}` };
                 } else {
-                    return { q: `${a} : ${b} = ${a * m} : x \\quad \\text{xを求めなさい}`, a: `x = ${b * m}` };
+                    return { q: `${a} : ${b} = ${a * m} : x 　の x を求めなさい`, a: `x = ${b * m}` };
                 }
             }
         };
@@ -718,25 +751,81 @@
                 let a = Math.floor(Math.random() * 40) + 10;
                 let b = x + a;
                 if (Math.random() > 0.5) {
-                    return { q: `x + ${a} = ${b} \\quad \\text{にあてはまるxの値を求めなさい}`, a: `x = ${x}` };
+                    return { q: `x + ${a} = ${b} 　の x の値を求めなさい`, a: `x = ${x}` };
                 } else {
-                    return { q: `x - ${a} = ${x - a} \\quad \\text{にあてはまるxの値を求めなさい}`, a: `x = ${x}` };
+                    return { q: `x - ${a} = ${x - a} 　の x の値を求めなさい`, a: `x = ${x}` };
                 }
             } else if (diff === 'normal') {
                 let x = Math.floor(Math.random() * 20) + 2;
                 let a = Math.floor(Math.random() * 8) + 2;
                 if (Math.random() > 0.5) {
-                    return { q: `x \\times ${a} = ${x * a} \\quad \\text{xを求めなさい}`, a: `x = ${x}` };
+                    return { q: `x \\times ${a} = ${x * a} 　の x を求めなさい`, a: `x = ${x}` };
                 } else {
                     let ans = x * a;
-                    return { q: `x \\div ${a} = ${x} \\quad \\text{xを求めなさい}`, a: `x = ${ans}` };
+                    return { q: `x \\div ${a} = ${x} 　の x を求めなさい`, a: `x = ${ans}` };
                 }
             } else {
                 let x = Math.floor(Math.random() * 15) + 2;
                 let a = Math.floor(Math.random() * 8) + 2;
                 let b = Math.floor(Math.random() * 20) + 5;
                 let c = a * x + b;
-                return { q: `x \\times ${a} + ${b} = ${c} \\quad \\text{xを求めなさい}`, a: `x = ${x}` };
+                return { q: `x \\times ${a} + ${b} = ${c} 　の x を求めなさい`, a: `x = ${x}` };
+            }
+        };
+
+        const complex_mixed_operations = (diff) => {
+            let type = Math.floor(Math.random() * 3);
+            if (type === 0) {
+                // (A + B) * C - D
+                let a = Math.floor(Math.random() * 50) + 10;
+                let b = Math.floor(Math.random() * 50) + 10;
+                let c = Math.floor(Math.random() * 8) + 2;
+                let d = Math.floor(Math.random() * 50) + 10;
+                let ans = (a + b) * c - d;
+                return { q: `(${a} + ${b}) \\times ${c} - ${d} = `, a: `${ans}` };
+            } else if (type === 1) {
+                // A * B + C * D
+                let a = Math.floor(Math.random() * 20) + 10;
+                let b = Math.floor(Math.random() * 8) + 2;
+                let c = Math.floor(Math.random() * 20) + 10;
+                let d = Math.floor(Math.random() * 8) + 2;
+                let ans = a * b + c * d;
+                return { q: `${a} \\times ${b} + ${c} \\times ${d} = `, a: `${ans}` };
+            } else {
+                // A - B / C * D
+                let b = Math.floor(Math.random() * 10) + 2;
+                let c = Math.floor(Math.random() * 5) + 2;
+                let b_val = b * c;
+                let d = Math.floor(Math.random() * 8) + 2;
+                let a = Math.floor(Math.random() * 50) + 50;
+                let ans = a - (b_val / c) * d;
+                return { q: `${a} - ${b_val} \\div ${c} \\times ${d} = `, a: `${ans}` };
+            }
+        };
+
+        const reverse_calculation = (diff) => {
+            let type = Math.floor(Math.random() * 3);
+            if (type === 0) {
+                // A + □ * B = C
+                let ans = Math.floor(Math.random() * 10) + 2;
+                let b = Math.floor(Math.random() * 8) + 2;
+                let a = Math.floor(Math.random() * 20) + 10;
+                let c = a + ans * b;
+                return { q: `${a} + □ \\times ${b} = ${c}　の □ にあてはまる数を求めなさい`, a: `□ = ${ans}` };
+            } else if (type === 1) {
+                // (□ - A) / B = C
+                let a = Math.floor(Math.random() * 15) + 5;
+                let b = Math.floor(Math.random() * 8) + 2;
+                let c = Math.floor(Math.random() * 10) + 2;
+                let ans = c * b + a;
+                return { q: `(□ - ${a}) \\div ${b} = ${c}　の □ にあてはまる数を求めなさい`, a: `□ = ${ans}` };
+            } else {
+                // A - B / □ = C 
+                let a = Math.floor(Math.random() * 20) + 15;
+                let c = Math.floor(Math.random() * 10) + 2;
+                let ans = Math.floor(Math.random() * 8) + 2;
+                let b = (a - c) * ans;
+                return { q: `${a} - ${b} \\div □ = ${c}　の □ にあてはまる数を求めなさい`, a: `□ = ${ans}` };
             }
         };
 
@@ -751,6 +840,7 @@
             multiplication_multi_digit,
             division_rem,
             fraction_add_sub_same_den,
+            decimal_add_sub_3rd,
             decimal_add_sub,
             division_2d,
             decimal_mul_div_int,
@@ -758,19 +848,22 @@
             decimal_mul_div,
             fraction_add_sub,
             gcd_lcm,
+            per_unit_quantity,
             fraction_mul_div,
             ratio,
-            algebraic_expression_elem
+            algebraic_expression_elem,
+            complex_mixed_operations,
+            reverse_calculation
         };
 
         // --- Math Renderer ---
         const renderContent = (str) => {
             if (!str) return null;
             
-            // \quad や \Box の置換を追加
-            let processedStr = str.replace(/\\times/g, '×').replace(/\\div/g, '÷').replace(/\\quad/g, '　').replace(/\\Box/g, '□');
+            // \times \div の置換のみ行う（\Boxや\quadはジェネレーター側で処理済み）
+            let processedStr = str.replace(/\\times/g, '×').replace(/\\div/g, '÷');
             
-            const tokens = processedStr.split(/(\\frac{[^{}]+}{[^{}]+}|\\sqrt{[^{}]+}|\\text{[^{}]+})/g);
+            const tokens = processedStr.split(/(\\frac{[^{}]+}{[^{}]+}|\\sqrt{[^{}]+})/g);
             
             return (
                 <span className="inline-flex items-center flex-wrap leading-loose">
@@ -794,11 +887,6 @@
                                         <span className="border-t border-gray-800 pt-[1px] leading-none tracking-normal pr-0.5">{renderSimpleMath(match[1])}</span>
                                     </span>
                                 );
-                            }
-                        } else if (token.startsWith('\\text')) {
-                            const match = /\\text{([^{}]+)}/.exec(token);
-                            if (match) {
-                                return <span key={i} className="mx-1">{match[1]}</span>;
                             }
                         }
                         return <span key={i} className="inline-block leading-relaxed">{renderSimpleMath(token)}</span>;
@@ -848,6 +936,7 @@
                         { id: 'multiplication_multi_digit', name: 'かけ算の筆算' },
                         { id: 'division_rem', name: 'あまりのあるわり算' },
                         { id: 'fraction_add_sub_same_den', name: '分数のたし算・ひき算 (同分母)' },
+                        { id: 'decimal_add_sub_3rd', name: '小数のたし算・ひき算 (小3)' },
                     ]
                 },
                 {
@@ -865,14 +954,17 @@
                         { id: 'decimal_mul_div', name: '小数同士の乗除' },
                         { id: 'fraction_add_sub', name: '分数のたし算・ひき算 (異分母)' },
                         { id: 'gcd_lcm', name: '最大公約数・最小公倍数' },
+                        { id: 'per_unit_quantity', name: '単位量あたりの大きさ' },
                     ]
                 },
                 {
-                    grade: '小学6年',
+                    grade: '小学6年・中学入試',
                     items: [
                         { id: 'fraction_mul_div', name: '分数のかけ算・わり算' },
                         { id: 'ratio', name: '比と比の値' },
-                        { id: 'algebraic_expression_elem', name: '文字と式 (逆算)' },
+                        { id: 'algebraic_expression_elem', name: '文字と式 (xを求める)' },
+                        { id: 'complex_mixed_operations', name: '四則混合計算 (応用)' },
+                        { id: 'reverse_calculation', name: '逆算の練習' },
                     ]
                 }
             ];
@@ -883,6 +975,22 @@
             const [problems, setProblems] = useState([]);
             const [showAnswers, setShowAnswers] = useState(false);
             const [error, setError] = useState('');
+            const [theme, setTheme] = useState('お買い物');
+            const [isGeneratingWordProblems, setIsGeneratingWordProblems] = useState(false);
+            
+            // APIキーの設定
+            const [apiKey, setApiKey] = useState('');
+            const [showSettings, setShowSettings] = useState(false);
+
+            useEffect(() => {
+                const savedKey = localStorage.getItem('gemini_api_key');
+                if (savedKey) setApiKey(savedKey);
+            }, []);
+
+            const saveApiKey = (key) => {
+                setApiKey(key);
+                localStorage.setItem('gemini_api_key', key);
+            };
 
             const toggleUnit = (unitId) => {
                 setSelectedUnits(prev => {
@@ -897,6 +1005,107 @@
                     setSelectedUnits([]);
                 } else {
                     setSelectedUnits(allIds);
+                }
+            };
+
+            const fetchWithRetry = async (url, options, retries = 5) => {
+                const delays = [1000, 2000, 4000, 8000, 16000];
+                for (let i = 0; i < retries; i++) {
+                    try {
+                        const response = await fetch(url, options);
+                        if (!response.ok) {
+                            const errorData = await response.json();
+                            throw new Error(errorData.error?.message || 'API Error');
+                        }
+                        return await response.json();
+                    } catch (error) {
+                        if (i === retries - 1) throw error;
+                        await new Promise(resolve => setTimeout(resolve, delays[i]));
+                    }
+                }
+            };
+
+            const generateWordProblemsWithGemini = async () => {
+                if (selectedUnits.length === 0) {
+                    setError('1つ以上の単元を選択してください。');
+                    return;
+                }
+                if (!apiKey) {
+                    setError('下部の設定からGemini APIキーを入力してください。');
+                    setShowSettings(true);
+                    return;
+                }
+                setError('');
+                setIsGeneratingWordProblems(true);
+                setProblems([]);
+
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+                const selectedUnitNames = unitsGrouped
+                    .flatMap(g => g.items)
+                    .filter(u => selectedUnits.includes(u.id))
+                    .map(u => u.name)
+                    .join(', ');
+
+                const promptText = `以下の条件で、小学生向けの算数の文章題を作成してください。
+- 関連する単元: ${selectedUnitNames}
+- 難易度: ${difficulty}
+- テーマ: ${theme}
+- 問題数: ${count}問
+
+問題文にはLaTeX形式の数式を使わず、プレーンテキストまたは通常の記号を使ってください。分数などが必要な場合は \\frac{1}{2} のように書いてください。
+答えは簡潔に書いてください。`;
+
+                const payload = {
+                    contents: [{ parts: [{ text: promptText }] }],
+                    systemInstruction: {
+                        parts: [{ text: "あなたはプロの小学校の算数教師です。小学生が楽しく解ける文章題を生成してください。" }]
+                    },
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "OBJECT",
+                            properties: {
+                                problems: {
+                                    type: "ARRAY",
+                                    items: {
+                                        type: "OBJECT",
+                                        properties: {
+                                            q: { type: "STRING", description: "問題文" },
+                                            a: { type: "STRING", description: "解答" }
+                                        },
+                                        required: ["q", "a"]
+                                    }
+                                }
+                            },
+                            required: ["problems"]
+                        }
+                    }
+                };
+
+                try {
+                    const result = await fetchWithRetry(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (text) {
+                        const data = JSON.parse(text);
+                        if (data.problems && data.problems.length > 0) {
+                            setProblems(data.problems);
+                            setShowAnswers(false);
+                        } else {
+                            setError('文章題の生成に失敗しました。');
+                        }
+                    } else {
+                        setError('文章題の生成に失敗しました。');
+                    }
+                } catch (err) {
+                    setError('通信エラーが発生しました: ' + err.message);
+                } finally {
+                    setIsGeneratingWordProblems(false);
                 }
             };
 
@@ -1031,16 +1240,16 @@
                                 <div className="space-y-2.5 border-t pt-4 border-gray-100">
                                     <button 
                                         onClick={generate}
-                                        disabled={selectedUnits.length === 0}
+                                        disabled={selectedUnits.length === 0 || isGeneratingWordProblems}
                                         className="w-full flex items-center justify-center gap-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium py-2.5 px-4 rounded-lg transition-colors text-sm border border-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         <RefreshIcon />
-                                        別の問題を生成
+                                        計算問題を生成
                                     </button>
 
                                     <button 
                                         onClick={() => setShowAnswers(!showAnswers)}
-                                        disabled={selectedUnits.length === 0}
+                                        disabled={selectedUnits.length === 0 || isGeneratingWordProblems}
                                         className="w-full flex items-center justify-center gap-1.5 bg-gray-50 hover:bg-gray-100 text-gray-700 font-medium py-2.5 px-4 rounded-lg transition-colors text-sm border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         {showAnswers ? <EyeOffIcon /> : <EyeIcon />}
@@ -1055,6 +1264,59 @@
                                         <PrinterIcon />
                                         プリントを印刷
                                     </button>
+                                </div>
+
+                                {/* Gemini API機能 */}
+                                <div className="space-y-4 border-t pt-4 border-gray-100">
+                                    <div>
+                                        <h3 className="text-sm font-bold text-gray-800 mb-1 flex items-center gap-1">
+                                            <span className="text-purple-600">✨</span> AIで文章題を作成
+                                        </h3>
+                                        <p className="text-xs text-gray-500 mb-3">選択した単元とテーマを組み合わせて文章題を作ります。</p>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 mb-1">テーマ</label>
+                                        <input 
+                                            type="text"
+                                            value={theme}
+                                            onChange={(e) => setTheme(e.target.value)}
+                                            placeholder="例: お買い物、動物、宇宙など"
+                                            className="w-full bg-gray-50 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 p-2.5 outline-none transition-shadow text-sm font-medium"
+                                        />
+                                    </div>
+                                    <button 
+                                        onClick={generateWordProblemsWithGemini}
+                                        disabled={selectedUnits.length === 0 || isGeneratingWordProblems}
+                                        className="w-full flex items-center justify-center gap-1.5 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-medium py-2.5 px-4 rounded-lg transition-all text-sm shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {isGeneratingWordProblems ? (
+                                            <span className="animate-pulse">生成中...</span>
+                                        ) : (
+                                            <span>文章題を生成✨</span>
+                                        )}
+                                    </button>
+                                </div>
+
+                                {/* APIキー設定 */}
+                                <div className="border-t pt-4 border-gray-100">
+                                    <button 
+                                        onClick={() => setShowSettings(!showSettings)}
+                                        className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
+                                    >
+                                        ⚙️ API設定
+                                    </button>
+                                    {showSettings && (
+                                        <div className="mt-2 space-y-2">
+                                            <label className="block text-[10px] text-gray-500">Gemini API Key (ブラウザにのみ保存されます)</label>
+                                            <input 
+                                                type="password"
+                                                value={apiKey}
+                                                onChange={(e) => saveApiKey(e.target.value)}
+                                                placeholder="AI機能を使う場合に入力"
+                                                className="w-full bg-gray-50 border border-gray-300 rounded-md p-1.5 outline-none text-xs"
+                                            />
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -1075,7 +1337,12 @@
                                     </div>
                                 </div>
 
-                                {problems.length > 0 ? (
+                                {isGeneratingWordProblems ? (
+                                    <div className="flex flex-col items-center justify-center h-64 text-purple-600 gap-4">
+                                        <div className="animate-spin text-4xl">✨</div>
+                                        <div className="text-lg font-bold animate-pulse">AIが文章題を考えています...</div>
+                                    </div>
+                                ) : problems.length > 0 ? (
                                     <div className="grid gap-x-8 sm:gap-x-12 md:gap-x-16 gap-y-8 sm:gap-y-12 grid-cols-1 md:grid-cols-2">
                                         {problems.map((p, i) => (
                                             <div key={i} className="flex gap-3 sm:gap-4 break-inside-avoid">
@@ -1098,7 +1365,7 @@
                                     </div>
                                 ) : (
                                     <div className="flex items-center justify-center h-64 text-gray-400 text-lg">
-                                        {error ? '左のパネルから単元を選択してください。' : '問題を生成しています...'}
+                                        {error ? '左のパネルから単元を選択するか、API設定を行ってください。' : '問題を生成しています...'}
                                     </div>
                                 )}
                                 
