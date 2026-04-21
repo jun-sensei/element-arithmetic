@@ -48,6 +48,9 @@
     <div id="root"></div>
 
     <script type="text/babel">
+        // 環境によるAPIキーの自動挿入を確実にするため、トップレベルに宣言
+        const apiKey = "";
+
         const { useState, useEffect } = React;
 
         // --- Icons (Inline SVG) ---
@@ -1021,7 +1024,6 @@
                 setIsGeneratingWordProblems(true);
                 setProblems([]);
 
-                const apiKey = "";
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
 
                 const selectedUnitNames = unitsGrouped
