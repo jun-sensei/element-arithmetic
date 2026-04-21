@@ -48,9 +48,6 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        // 環境によるAPIキーの自動挿入用（絶対に変数名や位置を変更しないこと）
-        const apiKey = "";
-
         const { useState, useEffect } = React;
 
         // --- Icons (Inline SVG) ---
@@ -279,14 +276,14 @@
         const add_sub_bracket = (diff) => {
             let a, b, c, ans;
             if (diff === 'easy') {
-                a = Math.floor(Math.random() * 20) + 20; // 20-39
-                b = Math.floor(Math.random() * 10) + 10; // 10-19
+                a = Math.floor(Math.random() * 20) + 20; 
+                b = Math.floor(Math.random() * 10) + 10; 
                 c = Math.floor(Math.random() * 9) + 1;
                 ans = a - (b + c);
                 return { q: `${a} - (${b} + ${c}) = `, a: `${ans}` };
             } else if (diff === 'normal') {
-                a = Math.floor(Math.random() * 40) + 40; // 40-79
-                b = Math.floor(Math.random() * 20) + 20; // 20-39
+                a = Math.floor(Math.random() * 40) + 40; 
+                b = Math.floor(Math.random() * 20) + 20; 
                 c = Math.floor(Math.random() * 19) + 1;
                 ans = a - (b - c);
                 return { q: `${a} - (${b} - ${c}) = `, a: `${ans}` };
@@ -335,20 +332,20 @@
 
         const multiplication_multi_digit = (diff) => {
             if (diff === 'easy') {
-                let a = Math.floor(Math.random() * 90) + 10; // 2 digits
-                let b = Math.floor(Math.random() * 8) + 2;   // 1 digit
+                let a = Math.floor(Math.random() * 90) + 10; 
+                let b = Math.floor(Math.random() * 8) + 2;   
                 return { q: `${a} \\times ${b} = `, a: `${a * b}` };
             } else if (diff === 'normal') {
-                let a = Math.floor(Math.random() * 900) + 100; // 3 digits
-                let b = Math.floor(Math.random() * 8) + 2;     // 1 digit
+                let a = Math.floor(Math.random() * 900) + 100; 
+                let b = Math.floor(Math.random() * 8) + 2;     
                 if (Math.random() > 0.5) {
-                    a = Math.floor(Math.random() * 90) + 10; // 2 digits
-                    b = Math.floor(Math.random() * 90) + 10; // 2 digits
+                    a = Math.floor(Math.random() * 90) + 10; 
+                    b = Math.floor(Math.random() * 90) + 10; 
                 }
                 return { q: `${a} \\times ${b} = `, a: `${a * b}` };
             } else {
-                let a = Math.floor(Math.random() * 900) + 100; // 3 digits
-                let b = Math.floor(Math.random() * 90) + 10;   // 2 digits
+                let a = Math.floor(Math.random() * 900) + 100; 
+                let b = Math.floor(Math.random() * 90) + 10;   
                 return { q: `${a} \\times ${b} = `, a: `${a * b}` };
             }
         };
@@ -976,17 +973,6 @@
             const [problems, setProblems] = useState([]);
             const [showAnswers, setShowAnswers] = useState(false);
             const [error, setError] = useState('');
-            const [theme, setTheme] = useState('お買い物');
-            const [isGeneratingWordProblems, setIsGeneratingWordProblems] = useState(false);
-            
-            // APIキーの設定 (ローカルHTMLとして保存して使うユーザー用)
-            const [userApiKey, setUserApiKey] = useState(() => localStorage.getItem('gemini_api_key') || '');
-            const [showSettings, setShowSettings] = useState(false);
-
-            const saveApiKey = (key) => {
-                setUserApiKey(key);
-                localStorage.setItem('gemini_api_key', key);
-            };
 
             const toggleUnit = (unitId) => {
                 setSelectedUnits(prev => {
@@ -1001,112 +987,6 @@
                     setSelectedUnits([]);
                 } else {
                     setSelectedUnits(allIds);
-                }
-            };
-
-            const fetchWithRetry = async (url, options) => {
-                const delays = [1000, 2000, 4000, 8000, 16000];
-                for (let i = 0; i < 5; i++) {
-                    try {
-                        const response = await fetch(url, options);
-                        if (!response.ok) {
-                            const errorData = await response.json();
-                            throw new Error(errorData.error?.message || `HTTP Error ${response.status}`);
-                        }
-                        return await response.json();
-                    } catch (err) {
-                        if (i === 4) throw err;
-                        await new Promise(resolve => setTimeout(resolve, delays[i]));
-                    }
-                }
-            };
-
-            const generateWordProblemsWithGemini = async () => {
-                if (selectedUnits.length === 0) {
-                    setError('1つ以上の単元を選択してください。');
-                    return;
-                }
-                
-                // システムのキーか、ユーザー入力のキーのどちらかを使用
-                const effectiveApiKey = userApiKey.trim() || apiKey;
-                
-                if (!effectiveApiKey) {
-                    setError('下部の設定からGemini APIキーを入力してください。');
-                    setShowSettings(true);
-                    return;
-                }
-                
-                setError('');
-                setIsGeneratingWordProblems(true);
-                setProblems([]);
-
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${effectiveApiKey}`;
-
-                const selectedUnitNames = unitsGrouped
-                    .flatMap(g => g.items)
-                    .filter(u => selectedUnits.includes(u.id))
-                    .map(u => u.name)
-                    .join(', ');
-
-                const promptText = `以下の条件で、小学生向けの算数の文章題を作成してください。
-- 関連する単元: ${selectedUnitNames}
-- 難易度: ${difficulty}
-- テーマ: ${theme}
-- 問題数: ${count}問
-
-問題文にはLaTeX形式の数式を使わず、プレーンテキストまたは通常の記号を使ってください。分数などが必要な場合は \\frac{1}{2} のように書いてください。
-答えは簡潔に書いてください。`;
-
-                const payload = {
-                    contents: [{ parts: [{ text: promptText }] }],
-                    systemInstruction: {
-                        parts: [{ text: "あなたはプロの小学校の算数教師です。小学生が楽しく解ける文章題を生成してください。" }]
-                    },
-                    generationConfig: {
-                        responseMimeType: "application/json",
-                        responseSchema: {
-                            type: "OBJECT",
-                            properties: {
-                                problems: {
-                                    type: "ARRAY",
-                                    items: {
-                                        type: "OBJECT",
-                                        properties: {
-                                            q: { type: "STRING", description: "問題文" },
-                                            a: { type: "STRING", description: "解答" }
-                                        },
-                                        required: ["q", "a"]
-                                    }
-                                }
-                            },
-                            required: ["problems"]
-                        }
-                    }
-                };
-
-                try {
-                    const result = await fetchWithRetry(url, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-
-                    const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
-                    if (text) {
-                        const data = JSON.parse(text);
-                        if (data.problems && data.problems.length > 0) {
-                            setProblems(data.problems);
-                            setShowAnswers(false);
-                        } else {
-                            setError('文章題の生成に失敗しました。');
-                        }
-                    } else {
-                        setError('文章題の生成に失敗しました。');
-                    }
-                } catch (err) {
-                    setError(`通信エラーが発生しました: ${err.message}`);
-                } finally {
-                    setIsGeneratingWordProblems(false);
                 }
             };
 
@@ -1241,16 +1121,16 @@
                                 <div className="space-y-2.5 border-t pt-4 border-gray-100">
                                     <button 
                                         onClick={generate}
-                                        disabled={selectedUnits.length === 0 || isGeneratingWordProblems}
+                                        disabled={selectedUnits.length === 0}
                                         className="w-full flex items-center justify-center gap-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium py-2.5 px-4 rounded-lg transition-colors text-sm border border-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         <RefreshIcon />
-                                        計算問題を生成
+                                        別の問題を生成
                                     </button>
 
                                     <button 
                                         onClick={() => setShowAnswers(!showAnswers)}
-                                        disabled={selectedUnits.length === 0 || isGeneratingWordProblems}
+                                        disabled={selectedUnits.length === 0}
                                         className="w-full flex items-center justify-center gap-1.5 bg-gray-50 hover:bg-gray-100 text-gray-700 font-medium py-2.5 px-4 rounded-lg transition-colors text-sm border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         {showAnswers ? <EyeOffIcon /> : <EyeIcon />}
@@ -1266,60 +1146,6 @@
                                         プリントを印刷
                                     </button>
                                 </div>
-
-                                {/* Gemini API機能 */}
-                                <div className="space-y-4 border-t pt-4 border-gray-100">
-                                    <div>
-                                        <h3 className="text-sm font-bold text-gray-800 mb-1 flex items-center gap-1">
-                                            <span className="text-purple-600">✨</span> AIで文章題を作成
-                                        </h3>
-                                        <p className="text-xs text-gray-500 mb-3">選択した単元とテーマを組み合わせて文章題を作ります。</p>
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-700 mb-1">テーマ</label>
-                                        <input 
-                                            type="text"
-                                            value={theme}
-                                            onChange={(e) => setTheme(e.target.value)}
-                                            placeholder="例: お買い物、動物、宇宙など"
-                                            className="w-full bg-gray-50 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 p-2.5 outline-none transition-shadow text-sm font-medium"
-                                        />
-                                    </div>
-                                    <button 
-                                        onClick={generateWordProblemsWithGemini}
-                                        disabled={selectedUnits.length === 0 || isGeneratingWordProblems}
-                                        className="w-full flex items-center justify-center gap-1.5 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-medium py-2.5 px-4 rounded-lg transition-all text-sm shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        {isGeneratingWordProblems ? (
-                                            <span className="animate-pulse">生成中...</span>
-                                        ) : (
-                                            <span>文章題を生成✨</span>
-                                        )}
-                                    </button>
-                                </div>
-
-                                {/* APIキー設定 */}
-                                <div className="border-t pt-4 border-gray-100">
-                                    <button 
-                                        onClick={() => setShowSettings(!showSettings)}
-                                        className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
-                                    >
-                                        ⚙️ API設定 (ローカル保存用)
-                                    </button>
-                                    {showSettings && (
-                                        <div className="mt-2 space-y-2">
-                                            <label className="block text-[10px] text-gray-500">Gemini API Key (ご自身のブラウザにのみ保存されます)</label>
-                                            <input 
-                                                type="password"
-                                                value={userApiKey}
-                                                onChange={(e) => saveApiKey(e.target.value)}
-                                                placeholder="APIキーを入力"
-                                                className="w-full bg-gray-50 border border-gray-300 rounded-md p-1.5 outline-none text-xs"
-                                            />
-                                        </div>
-                                    )}
-                                </div>
-
                             </div>
                         </div>
 
@@ -1339,12 +1165,7 @@
                                     </div>
                                 </div>
 
-                                {isGeneratingWordProblems ? (
-                                    <div className="flex flex-col items-center justify-center h-64 text-purple-600 gap-4">
-                                        <div className="animate-spin text-4xl">✨</div>
-                                        <div className="text-lg font-bold animate-pulse">AIが文章題を考えています...</div>
-                                    </div>
-                                ) : problems.length > 0 ? (
+                                {problems.length > 0 ? (
                                     <div className="grid gap-x-8 sm:gap-x-12 md:gap-x-16 gap-y-8 sm:gap-y-12 grid-cols-1 md:grid-cols-2">
                                         {problems.map((p, i) => (
                                             <div key={i} className="flex gap-3 sm:gap-4 break-inside-avoid">
@@ -1367,7 +1188,7 @@
                                     </div>
                                 ) : (
                                     <div className="flex items-center justify-center h-64 text-gray-400 text-lg">
-                                        {error ? '左のパネルから単元を選択するか、API設定を行ってください。' : '問題を生成しています...'}
+                                        {error ? '左のパネルから単元を選択してください。' : '問題を生成しています...'}
                                     </div>
                                 )}
                                 
