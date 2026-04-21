@@ -977,20 +977,6 @@
             const [error, setError] = useState('');
             const [theme, setTheme] = useState('お買い物');
             const [isGeneratingWordProblems, setIsGeneratingWordProblems] = useState(false);
-            
-            // APIキーの設定
-            const [apiKey, setApiKey] = useState('');
-            const [showSettings, setShowSettings] = useState(false);
-
-            useEffect(() => {
-                const savedKey = localStorage.getItem('gemini_api_key');
-                if (savedKey) setApiKey(savedKey);
-            }, []);
-
-            const saveApiKey = (key) => {
-                setApiKey(key);
-                localStorage.setItem('gemini_api_key', key);
-            };
 
             const toggleUnit = (unitId) => {
                 setSelectedUnits(prev => {
@@ -1030,16 +1016,13 @@
                     setError('1つ以上の単元を選択してください。');
                     return;
                 }
-                if (!apiKey) {
-                    setError('下部の設定からGemini APIキーを入力してください。');
-                    setShowSettings(true);
-                    return;
-                }
+                
                 setError('');
                 setIsGeneratingWordProblems(true);
                 setProblems([]);
 
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey.trim()}`;
+                const apiKey = "";
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
 
                 const selectedUnitNames = unitsGrouped
                     .flatMap(g => g.items)
@@ -1297,27 +1280,6 @@
                                     </button>
                                 </div>
 
-                                {/* APIキー設定 */}
-                                <div className="border-t pt-4 border-gray-100">
-                                    <button 
-                                        onClick={() => setShowSettings(!showSettings)}
-                                        className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
-                                    >
-                                        ⚙️ API設定
-                                    </button>
-                                    {showSettings && (
-                                        <div className="mt-2 space-y-2">
-                                            <label className="block text-[10px] text-gray-500">Gemini API Key (ブラウザにのみ保存されます)</label>
-                                            <input 
-                                                type="password"
-                                                value={apiKey}
-                                                onChange={(e) => saveApiKey(e.target.value)}
-                                                placeholder="AI機能を使う場合に入力"
-                                                className="w-full bg-gray-50 border border-gray-300 rounded-md p-1.5 outline-none text-xs"
-                                            />
-                                        </div>
-                                    )}
-                                </div>
                             </div>
                         </div>
 
@@ -1365,7 +1327,7 @@
                                     </div>
                                 ) : (
                                     <div className="flex items-center justify-center h-64 text-gray-400 text-lg">
-                                        {error ? '左のパネルから単元を選択するか、API設定を行ってください。' : '問題を生成しています...'}
+                                        {error ? '左のパネルから単元を選択してください。' : '問題を生成しています...'}
                                     </div>
                                 )}
                                 
