@@ -1,1038 +1,985 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>小学校 算数 小テスト作成ツール</title>
+import React, { useState, useEffect } from 'react';
+
+// --- Icons (Inline SVG) ---
+const PrinterIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="6 9 6 2 18 2 18 9"></polyline>
+        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+        <rect x="6" y="14" width="12" height="8"></rect>
+    </svg>
+);
+
+const RefreshIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 2v6h-6"></path>
+        <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path>
+        <path d="M3 22v-6h6"></path>
+        <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
+    </svg>
+);
+
+const EyeIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+        <circle cx="12" cy="12" r="3"></circle>
+    </svg>
+);
+
+const EyeOffIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+        <line x1="1" y1="1" x2="23" y2="23"></line>
+    </svg>
+);
+
+// --- Helper Functions ---
+const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);
+
+const formatFrac = (n, d) => {
+    let g = gcd(Math.abs(n), d);
+    n = n / g; d = d / g;
+    if (d === 1) return `${n}`;
+    if (n === 0) return `0`;
+    return `\\frac{${n}}{${d}}`;
+};
+
+// --- Problem Generators ---
+
+// 小学1年
+const add_sub_10 = (diff) => {
+    let op = Math.random() > 0.5 ? '+' : '-';
+    if (diff === 'easy') {
+        let a, b, ans;
+        if (op === '+') {
+            a = Math.floor(Math.random() * 9) + 1; 
+            b = Math.floor(Math.random() * (10 - a)) + 1;
+            ans = a + b;
+        } else {
+            a = Math.floor(Math.random() * 10) + 1; 
+            b = Math.floor(Math.random() * a) + 1; 
+            ans = a - b;
+        }
+        return { q: `${a} ${op} ${b} = `, a: `${ans}` };
+    } else if (diff === 'normal') {
+        let a, b, ans;
+        if (op === '+') {
+            a = Math.floor(Math.random() * 9) + 1;
+            b = Math.floor(Math.random() * (10 - a)) + 1;
+            ans = a + b;
+            return Math.random() > 0.5 ? { q: `□ + ${b} = ${ans}`, a: `□ = ${a}` } : { q: `${a} + □ = ${ans}`, a: `□ = ${b}` };
+        } else {
+            a = Math.floor(Math.random() * 10) + 1;
+            b = Math.floor(Math.random() * a) + 1;
+            ans = a - b;
+            return Math.random() > 0.5 ? { q: `□ - ${b} = ${ans}`, a: `□ = ${a}` } : { q: `${a} - □ = ${ans}`, a: `□ = ${b}` };
+        }
+    } else {
+        let a, b, ans;
+        if (op === '+') {
+            a = Math.floor(Math.random() * 9) + 1;
+            b = Math.floor(Math.random() * (10 - a)) + 1;
+            ans = a + b;
+        } else {
+            a = Math.floor(Math.random() * 10) + 1;
+            b = Math.floor(Math.random() * a) + 1;
+            ans = a - b;
+        }
+        return { q: `${ans} = ${a} ${op} □`, a: `□ = ${b}` };
+    }
+};
+
+const add_sub_carry = (diff) => {
+    let op = Math.random() > 0.5 ? '+' : '-';
+    if (diff === 'easy') {
+        if (op === '+') {
+            let a = Math.floor(Math.random() * 8) + 2; 
+            let b = Math.floor(Math.random() * 8) + 2; 
+            if (a + b < 11) b = 11 - a + Math.floor(Math.random() * (9 - (11 - a) + 1));
+            if (b > 9) b = 9;
+            if (a + b < 11) { a = 9; b = 8; }
+            return { q: `${a} + ${b} = `, a: `${a + b}` };
+        } else {
+            let b = Math.floor(Math.random() * 8) + 2; 
+            let ans = Math.floor(Math.random() * 8) + 2; 
+            let a = b + ans;
+            if (a > 18 || a < 11) { a = 15; b = 7; ans = 8; }
+            return { q: `${a} - ${b} = `, a: `${ans}` };
+        }
+    } else if (diff === 'normal') {
+        if (op === '+') {
+            let a = Math.floor(Math.random() * 8) + 2;
+            let b = Math.floor(Math.random() * 8) + 2;
+            if (a + b < 11) b += 5;
+            return Math.random() > 0.5 ? { q: `□ + ${b} = ${a + b}`, a: `□ = ${a}` } : { q: `${a} + □ = ${a + b}`, a: `□ = ${b}` };
+        } else {
+            let b = Math.floor(Math.random() * 8) + 2;
+            let ans = Math.floor(Math.random() * 8) + 2;
+            let a = b + ans;
+            return Math.random() > 0.5 ? { q: `□ - ${b} = ${ans}`, a: `□ = ${a}` } : { q: `${a} - □ = ${ans}`, a: `□ = ${b}` };
+        }
+    } else {
+        let a = Math.floor(Math.random() * 8) + 2;
+        let b = Math.floor(Math.random() * 8) + 2;
+        let c = Math.floor(Math.random() * 8) + 2;
+        if (a + b + c > 25) { a = 7; b = 5; c = 6; }
+        return { q: `${a} + ${b} + ${c} = `, a: `${a + b + c}` };
+    }
+};
+
+const add_sub_3nums = (diff) => {
+    if (diff === 'easy') {
+        let a = Math.floor(Math.random() * 5) + 1;
+        let b = Math.floor(Math.random() * 5) + 1;
+        let c = Math.floor(Math.random() * 5) + 1;
+        return { q: `${a} + ${b} + ${c} = `, a: `${a + b + c}` };
+    } else if (diff === 'normal') {
+        let a = Math.floor(Math.random() * 9) + 1;
+        let b = Math.floor(Math.random() * 9) + 1;
+        let c = Math.floor(Math.random() * 9) + 1;
+        if (a < b) { let t=a; a=b; b=t; }
+        return { q: `${a} - ${b} + ${c} = `, a: `${a - b + c}` };
+    } else {
+        let a = Math.floor(Math.random() * 9) + 10;
+        let b = Math.floor(Math.random() * 9) + 1;
+        let c = Math.floor(Math.random() * 9) + 1;
+        if (a - b < c) c = a - b;
+        return { q: `${a} - ${b} - ${c} = `, a: `${a - b - c}` };
+    }
+};
+
+// 小学2年
+const add_sub_2d = (diff) => {
+    let op = Math.random() > 0.5 ? '+' : '-';
+    if (diff === 'easy') {
+        if (op === '+') {
+            let a1 = Math.floor(Math.random() * 8) + 1;
+            let a2 = Math.floor(Math.random() * 8) + 1;
+            let b1 = Math.floor(Math.random() * (9 - a1)) + 1;
+            let b2 = Math.floor(Math.random() * (9 - a2)) + 1;
+            let a = a1 * 10 + a2;
+            let b = b1 * 10 + b2;
+            return { q: `${a} + ${b} = `, a: `${a + b}` };
+        } else {
+            let a1 = Math.floor(Math.random() * 8) + 2;
+            let a2 = Math.floor(Math.random() * 8) + 2;
+            let b1 = Math.floor(Math.random() * (a1 - 1)) + 1;
+            let b2 = Math.floor(Math.random() * (a2 - 1)) + 1;
+            let a = a1 * 10 + a2;
+            let b = b1 * 10 + b2;
+            return { q: `${a} - ${b} = `, a: `${a - b}` };
+        }
+    } else if (diff === 'normal') {
+        if (op === '+') {
+            let a1 = Math.floor(Math.random() * 8) + 1;
+            let a2 = Math.floor(Math.random() * 8) + 2;
+            let b1 = Math.floor(Math.random() * (8 - a1)) + 1;
+            let b2 = Math.floor(Math.random() * 8) + 2;
+            if (a2 + b2 < 10) b2 = 10 - a2 + 1;
+            if (b2 > 9) b2 = 9;
+            let a = a1 * 10 + a2;
+            let b = b1 * 10 + b2;
+            return { q: `${a} + ${b} = `, a: `${a + b}` };
+        } else {
+            let a1 = Math.floor(Math.random() * 8) + 2;
+            let a2 = Math.floor(Math.random() * 8) + 1;
+            let b1 = Math.floor(Math.random() * (a1 - 1)) + 1;
+            let b2 = Math.floor(Math.random() * 8) + 2;
+            if (a2 >= b2) a2 = b2 - 1;
+            if (a2 < 0) a2 = 0;
+            let a = a1 * 10 + a2;
+            let b = b1 * 10 + b2;
+            return { q: `${a} - ${b} = `, a: `${a - b}` };
+        }
+    } else {
+        if (op === '+') {
+            let a = Math.floor(Math.random() * 90) + 10;
+            let b = Math.floor(Math.random() * 90) + 10;
+            if (a + b < 100) a += 50;
+            return { q: `${a} + ${b} = `, a: `${a + b}` };
+        } else {
+            let a = 100 + Math.floor(Math.random() * 50);
+            let b = Math.floor(Math.random() * 90) + 10;
+            return { q: `${a} - ${b} = `, a: `${a - b}` };
+        }
+    }
+};
+
+const multiplication_99 = (diff) => {
+    if (diff === 'easy') {
+        let a = Math.floor(Math.random() * 5) + 1; 
+        let b = Math.floor(Math.random() * 9) + 1; 
+        if (Math.random() > 0.5) { let t = a; a = b; b = t; }
+        return { q: `${a} \\times ${b} = `, a: `${a * b}` };
+    } else if (diff === 'normal') {
+        let a = Math.floor(Math.random() * 4) + 6; 
+        let b = Math.floor(Math.random() * 9) + 1; 
+        if (Math.random() > 0.5) { let t = a; a = b; b = t; }
+        return { q: `${a} \\times ${b} = `, a: `${a * b}` };
+    } else {
+        let a = Math.floor(Math.random() * 8) + 2; 
+        let b = Math.floor(Math.random() * 8) + 2; 
+        let ans = a * b;
+        return Math.random() > 0.5 ? { q: `□ \\times ${b} = ${ans}`, a: `□ = ${a}` } : { q: `${a} \\times □ = ${ans}`, a: `□ = ${b}` };
+    }
+};
+
+const add_sub_bracket = (diff) => {
+    let a, b, c, ans;
+    if (diff === 'easy') {
+        a = Math.floor(Math.random() * 20) + 20; // 20-39
+        b = Math.floor(Math.random() * 10) + 10; // 10-19
+        c = Math.floor(Math.random() * 9) + 1;
+        ans = a - (b + c);
+        return { q: `${a} - (${b} + ${c}) = `, a: `${ans}` };
+    } else if (diff === 'normal') {
+        a = Math.floor(Math.random() * 40) + 40; // 40-79
+        b = Math.floor(Math.random() * 20) + 20; // 20-39
+        c = Math.floor(Math.random() * 19) + 1;
+        ans = a - (b - c);
+        return { q: `${a} - (${b} - ${c}) = `, a: `${ans}` };
+    } else {
+        a = Math.floor(Math.random() * 50) + 50; 
+        b = Math.floor(Math.random() * 30) + 20; 
+        c = Math.floor(Math.random() * 19) + 1;
+        ans = a - (b - c);
+        return { q: `${a} - (${b} - ${c}) = `, a: `${ans}` };
+    }
+};
+
+// 小学3年
+const add_sub_3d = (diff) => {
+    let op = Math.random() > 0.5 ? '+' : '-';
+    if (diff === 'easy') {
+        let a = Math.floor(Math.random() * 800) + 100;
+        let b = Math.floor(Math.random() * 800) + 100;
+        if (op === '+') {
+            return { q: `${a} + ${b} = `, a: `${a + b}` };
+        } else {
+            if (a < b) { let t = a; a = b; b = t; }
+            return { q: `${a} - ${b} = `, a: `${a - b}` };
+        }
+    } else if (diff === 'normal') {
+        let a = Math.floor(Math.random() * 800) + 100;
+        let b = Math.floor(Math.random() * 800) + 100;
+        if (op === '+') {
+            return { q: `${a} + ${b} = `, a: `${a + b}` };
+        } else {
+            let a = Math.floor(Math.random() * 800) + 200;
+            let b = Math.floor(Math.random() * (a - 100)) + 50;
+            return { q: `${a} - ${b} = `, a: `${a - b}` };
+        }
+    } else {
+        let a = Math.floor(Math.random() * 8000) + 1000;
+        let b = Math.floor(Math.random() * 8000) + 1000;
+        if (op === '+') {
+            return { q: `${a} + ${b} = `, a: `${a + b}` };
+        } else {
+            if (a < b) { let t = a; a = b; b = t; }
+            return { q: `${a} - ${b} = `, a: `${a - b}` };
+        }
+    }
+};
+
+const multiplication_multi_digit = (diff) => {
+    if (diff === 'easy') {
+        let a = Math.floor(Math.random() * 90) + 10; // 2 digits
+        let b = Math.floor(Math.random() * 8) + 2;   // 1 digit
+        return { q: `${a} \\times ${b} = `, a: `${a * b}` };
+    } else if (diff === 'normal') {
+        let a = Math.floor(Math.random() * 900) + 100; // 3 digits
+        let b = Math.floor(Math.random() * 8) + 2;     // 1 digit
+        if (Math.random() > 0.5) {
+            a = Math.floor(Math.random() * 90) + 10; // 2 digits
+            b = Math.floor(Math.random() * 90) + 10; // 2 digits
+        }
+        return { q: `${a} \\times ${b} = `, a: `${a * b}` };
+    } else {
+        let a = Math.floor(Math.random() * 900) + 100; // 3 digits
+        let b = Math.floor(Math.random() * 90) + 10;   // 2 digits
+        return { q: `${a} \\times ${b} = `, a: `${a * b}` };
+    }
+};
+
+const division_rem = (diff) => {
+    if (diff === 'easy') {
+        let b = Math.floor(Math.random() * 8) + 2; 
+        let c = Math.floor(Math.random() * 9) + 1; 
+        let a = b * c;
+        return { q: `${a} \\div ${b} = `, a: `${c}` };
+    } else if (diff === 'normal') {
+        let b = Math.floor(Math.random() * 6) + 4; 
+        let c = Math.floor(Math.random() * 8) + 1; 
+        let r = Math.floor(Math.random() * (b - 1)) + 1; 
+        let a = b * c + r;
+        return { q: `${a} \\div ${b} = `, a: `${c} あまり ${r}` };
+    } else {
+        let b = Math.floor(Math.random() * 7) + 3; 
+        let c = Math.floor(Math.random() * 15) + 10; 
+        let r = Math.floor(Math.random() * b); 
+        let a = b * c + r;
+        if (a >= 100) { a = 99; c = Math.floor(a / b); r = a % b; }
+        return { q: `${a} \\div ${b} = `, a: r === 0 ? `${c}` : `${c} あまり ${r}` };
+    }
+};
+
+const fraction_add_sub_same_den = (diff) => {
+    let d = Math.floor(Math.random() * 7) + 3; 
+    let n1 = Math.floor(Math.random() * (d - 1)) + 1;
+    let n2 = Math.floor(Math.random() * (d - 1)) + 1;
+    let op = Math.random() > 0.5 ? '+' : '-';
+    if (diff === 'easy') op = '+';
+    if (diff === 'normal') op = Math.random() > 0.5 ? '+' : '-';
+    if (diff === 'hard') {
+        n1 = Math.floor(Math.random() * (d * 2)) + 1;
+        n2 = Math.floor(Math.random() * (d * 2)) + 1;
+    }
+
+    if (op === '-') {
+        if (n1 < n2) { let t = n1; n1 = n2; n2 = t; }
+        if (n1 === n2) { n1++; }
+    }
+    let ansN = op === '+' ? n1 + n2 : n1 - n2;
     
-    <!-- Tailwind CSS (スタイリング用) -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    let q_n1 = `\\frac{${n1}}{${d}}`;
+    let q_n2 = `\\frac{${n2}}{${d}}`;
+
+    return { q: `${q_n1} ${op} ${q_n2} = `, a: `${formatFrac(ansN, d)}` };
+};
+
+const decimal_add_sub_3rd = (diff) => {
+    let op = Math.random() > 0.5 ? '+' : '-';
+    let a = Math.floor(Math.random() * 98) + 1; // 0.1 to 9.9
+    let b = Math.floor(Math.random() * 98) + 1;
+    if (op === '-') {
+        if (a < b) { let t = a; a = b; b = t; }
+        if (a === b) a++;
+    }
+    let ans = op === '+' ? a + b : a - b;
+    return { q: `${a / 10} ${op} ${b / 10} = `, a: `${ans / 10}` };
+};
+
+// 小学4年
+const decimal_add_sub = (diff) => {
+    let op = Math.random() > 0.5 ? '+' : '-';
+    if (diff === 'easy') {
+        let a = (Math.floor(Math.random() * 89) + 11) / 10; 
+        let b = (Math.floor(Math.random() * 89) + 11) / 10;
+        if (op === '-') {
+            if (a < b) { let t = a; a = b; b = t; }
+        }
+        let ans = op === '+' ? a + b : a - b;
+        return { q: `${a} ${op} ${b} = `, a: `${Math.round(ans * 10) / 10}` };
+    } else if (diff === 'normal') {
+        let a = (Math.floor(Math.random() * 89) * 10 + Math.floor(Math.random() * 9) + 1) / 100;
+        let b = (Math.floor(Math.random() * 89) + 11) / 10;
+        if (Math.random() > 0.5) { let t = a; a = b; b = t; }
+        if (op === '-') {
+            if (a < b) { let t = a; a = b; b = t; }
+        }
+        let ans = op === '+' ? a + b : a - b;
+        return { q: `${a} ${op} ${b} = `, a: `${Math.round(ans * 100) / 100}` };
+    } else {
+        if (op === '+') {
+            let a = Math.floor(Math.random() * 9) + 1;
+            let b = (Math.floor(Math.random() * 89) * 10 + Math.floor(Math.random() * 9) + 1) / 100;
+            if (Math.random() > 0.5) { let t = a; a = b; b = t; }
+            return { q: `${a} + ${b} = `, a: `${Math.round((a + b) * 100) / 100}` };
+        } else {
+            let a = Math.floor(Math.random() * 9) + 2;
+            let b = (Math.floor(Math.random() * (a * 100 - 100))) / 100;
+            if (b <= 0) b = 0.5;
+            return { q: `${a} - ${b} = `, a: `${Math.round((a - b) * 100) / 100}` };
+        }
+    }
+};
+
+const division_2d = (diff) => {
+    if (diff === 'easy') {
+        let c = Math.floor(Math.random() * 7) + 2; 
+        let b = Math.floor(Math.random() * 10) + 11; 
+        if (b * c >= 100) b = Math.floor(99 / c);
+        let a = b * c;
+        return { q: `${a} \\div ${b} = `, a: `${c}` };
+    } else if (diff === 'normal') {
+        let c = Math.floor(Math.random() * 7) + 3; 
+        let b = Math.floor(Math.random() * 70) + 20; 
+        let r = Math.floor(Math.random() * (b - 1)) + 1;
+        let a = b * c + r;
+        return { q: `${a} \\div ${b} = `, a: `${c} あまり ${r}` };
+    } else {
+        let c = Math.floor(Math.random() * 40) + 11; 
+        let b = Math.floor(Math.random() * 15) + 12; 
+        let r = Math.floor(Math.random() * b);
+        let a = b * c + r;
+        if (a >= 1000) a = 999;
+        c = Math.floor(a / b);
+        r = a % b;
+        return { q: `${a} \\div ${b} = `, a: r === 0 ? `${c}` : `${c} あまり ${r}` };
+    }
+};
+
+const decimal_mul_div_int = (diff) => {
+    let op = Math.random() > 0.5 ? '\\times' : '\\div';
+    if (op === '\\times') {
+        let a = (Math.floor(Math.random() * 89) + 11) / 10;
+        let b = Math.floor(Math.random() * 8) + 2;
+        return { q: `${a} \\times ${b} = `, a: `${Math.round(a * b * 10) / 10}` };
+    } else {
+        let c = (Math.floor(Math.random() * 89) + 11) / 10;
+        let b = Math.floor(Math.random() * 8) + 2;
+        let a = Math.round(c * b * 10) / 10;
+        return { q: `${a} \\div ${b} = `, a: `${c}` };
+    }
+};
+
+const mixed_operations = (diff) => {
+    if (diff === 'easy') {
+        let a = Math.floor(Math.random() * 8) + 2;
+        let b = Math.floor(Math.random() * 8) + 2;
+        let c = Math.floor(Math.random() * 8) + 2;
+        let ans = a * b + c;
+        return { q: `${a} \\times ${b} + ${c} = `, a: `${ans}` };
+    } else if (diff === 'normal') {
+        let a = Math.floor(Math.random() * 8) + 2;
+        let b = Math.floor(Math.random() * 8) + 2;
+        let c = Math.floor(Math.random() * 8) + 2;
+        let d = Math.floor(Math.random() * 8) + 2;
+        let ans = a * b - c * d;
+        if (ans < 0) { let t = a; a = c; c = t; t = b; b = d; d = t; ans = -ans; }
+        return { q: `${a} \\times ${b} - ${c} \\times ${d} = `, a: `${ans}` };
+    } else {
+        let a = Math.floor(Math.random() * 8) + 2;
+        let b = Math.floor(Math.random() * 8) + 2;
+        let c = Math.floor(Math.random() * 8) + 2;
+        let d = Math.floor(Math.random() * 8) + 2;
+        let ans = a * (b + c) - d;
+        return { q: `${a} \\times (${b} + ${c}) - ${d} = `, a: `${ans}` };
+    }
+};
+
+// 小学5年
+const decimal_mul_div = (diff) => {
+    let op = Math.random() > 0.5 ? '\\times' : '\\div';
+    if (diff === 'easy') {
+        if (op === '\\times') {
+            let a = (Math.floor(Math.random() * 89) + 11) / 10;
+            let b = Math.floor(Math.random() * 8) + 2;
+            return { q: `${a} \\times ${b} = `, a: `${Math.round(a * b * 10) / 10}` };
+        } else {
+            let c = (Math.floor(Math.random() * 89) + 11) / 10;
+            let b = Math.floor(Math.random() * 8) + 2;
+            let a = Math.round(c * b * 10) / 10;
+            return { q: `${a} \\div ${b} = `, a: `${c}` };
+        }
+    } else if (diff === 'normal') {
+        if (op === '\\times') {
+            let a = (Math.floor(Math.random() * 89) + 11) / 10;
+            let b = (Math.floor(Math.random() * 89) + 11) / 10;
+            return { q: `${a} \\times ${b} = `, a: `${Math.round(a * b * 100) / 100}` };
+        } else {
+            let c = (Math.floor(Math.random() * 89) + 11) / 10;
+            let b = (Math.floor(Math.random() * 89) + 11) / 10;
+            let a = Math.round(c * b * 100) / 100;
+            return { q: `${a} \\div ${b} = `, a: `${c}` };
+        }
+    } else {
+        if (op === '\\times') {
+            let a = (Math.floor(Math.random() * 89) + 11) / 10;
+            let arr = [2.5, 4, 1.25, 8];
+            let b = arr[Math.floor(Math.random() * 2) * 2]; 
+            let c = b === 2.5 ? 4 : 8;
+            return { q: `${a} \\times ${b} \\times ${c} = `, a: `${Math.round(a * b * c * 10) / 10}` };
+        } else {
+            let b = (Math.floor(Math.random() * 40) + 11) / 10; 
+            let c = Math.floor(Math.random() * 8) + 2; 
+            let r = (Math.floor(Math.random() * (b * 10 - 1)) + 1) / 10;
+            let a = Math.round((b * c + r) * 10) / 10;
+            return { q: `${a} \\div ${b} 　(商は整数で求め、あまりもだす)`, a: `${c} あまり ${r}` };
+        }
+    }
+};
+
+const fraction_add_sub = (diff) => {
+    let op = Math.random() > 0.5 ? '+' : '-';
     
-    <!-- React & ReactDOM -->
-    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
-    
-    <!-- Babel (ブラウザ上でReactコードを変換するため) -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-    <style>
-        /* 印刷時の設定 */
-        @media print {
-            body { background-color: white; }
-            .print\:hidden { display: none !important; }
-            .print\:block { display: block !important; }
-            .print\:p-0 { padding: 0 !important; }
-            .print\:m-0 { margin: 0 !important; }
-            .print\:shadow-none { box-shadow: none !important; }
-            .print\:max-w-none { max-width: none !important; }
+    if (diff === 'easy') {
+        let m = Math.floor(Math.random() * 3) + 2; // 2, 3, 4
+        let d1 = Math.floor(Math.random() * 4) + 2; // 2, 3, 4, 5
+        let d2 = d1 * m;
+        let n1 = Math.floor(Math.random() * (d1 - 1)) + 1;
+        let n2 = Math.floor(Math.random() * (d2 - 1)) + 1;
+        let val1 = n1 * m;
+        let val2 = n2;
+        if (op === '-') {
+            if (val1 < val2) { let t=n1; n1=n2; n2=t; t=d1; d1=d2; d2=t; t=val1; val1=val2; val2=t; }
+            if (val1 === val2) { op = '+'; }
         }
-        /* スクロールバーのカスタマイズ */
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: #f1f1f1; 
-            border-radius: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #cbd5e1; 
-            border-radius: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8; 
-        }
-    </style>
-</head>
-<body class="bg-gray-100">
-
-    <div id="root"></div>
-
-    <script type="text/babel">
-        // 環境によるAPIキーの自動挿入を確実にするため、トップレベルに宣言
-        const apiKey = "";
-
-        const { useState, useEffect } = React;
-
-        // --- Icons (Inline SVG) ---
-        const PrinterIcon = () => (
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="6 9 6 2 18 2 18 9"></polyline>
-                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-                <rect x="6" y="14" width="12" height="8"></rect>
-            </svg>
-        );
-
-        const RefreshIcon = () => (
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 2v6h-6"></path>
-                <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path>
-                <path d="M3 22v-6h6"></path>
-                <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
-            </svg>
-        );
-
-        const EyeIcon = () => (
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                <circle cx="12" cy="12" r="3"></circle>
-            </svg>
-        );
-
-        const EyeOffIcon = () => (
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
-                <line x1="1" y1="1" x2="23" y2="23"></line>
-            </svg>
-        );
-
-        // --- Helper Functions ---
-        const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);
-
-        const formatFrac = (n, d) => {
-            let g = gcd(Math.abs(n), d);
-            n = n / g; d = d / g;
-            if (d === 1) return `${n}`;
-            if (n === 0) return `0`;
-            return `\\frac{${n}}{${d}}`;
-        };
-
-        // --- Problem Generators ---
+        let ansN = op === '+' ? val1 + val2 : val1 - val2;
+        return { q: `\\frac{${n1}}{${d1}} ${op} \\frac{${n2}}{${d2}} = `, a: `${formatFrac(ansN, d2)}` };
+    } else if (diff === 'normal') {
+        let d1 = Math.floor(Math.random() * 6) + 2;
+        let d2 = Math.floor(Math.random() * 6) + 2;
+        if (d1 === d2) d2++;
+        let n1 = Math.floor(Math.random() * (d1 - 1)) + 1;
+        let n2 = Math.floor(Math.random() * (d2 - 1)) + 1;
         
-        // 小学1年
-        const add_sub_10 = (diff) => {
-            let op = Math.random() > 0.5 ? '+' : '-';
-            if (diff === 'easy') {
-                let a, b, ans;
-                if (op === '+') {
-                    a = Math.floor(Math.random() * 9) + 1; 
-                    b = Math.floor(Math.random() * (10 - a)) + 1;
-                    ans = a + b;
-                } else {
-                    a = Math.floor(Math.random() * 10) + 1; 
-                    b = Math.floor(Math.random() * a) + 1; 
-                    ans = a - b;
-                }
-                return { q: `${a} ${op} ${b} = `, a: `${ans}` };
-            } else if (diff === 'normal') {
-                let a, b, ans;
-                if (op === '+') {
-                    a = Math.floor(Math.random() * 9) + 1;
-                    b = Math.floor(Math.random() * (10 - a)) + 1;
-                    ans = a + b;
-                    return Math.random() > 0.5 ? { q: `□ + ${b} = ${ans}`, a: `□ = ${a}` } : { q: `${a} + □ = ${ans}`, a: `□ = ${b}` };
-                } else {
-                    a = Math.floor(Math.random() * 10) + 1;
-                    b = Math.floor(Math.random() * a) + 1;
-                    ans = a - b;
-                    return Math.random() > 0.5 ? { q: `□ - ${b} = ${ans}`, a: `□ = ${a}` } : { q: `${a} - □ = ${ans}`, a: `□ = ${b}` };
-                }
-            } else {
-                let a, b, ans;
-                if (op === '+') {
-                    a = Math.floor(Math.random() * 9) + 1;
-                    b = Math.floor(Math.random() * (10 - a)) + 1;
-                    ans = a + b;
-                } else {
-                    a = Math.floor(Math.random() * 10) + 1;
-                    b = Math.floor(Math.random() * a) + 1;
-                    ans = a - b;
-                }
-                return { q: `${ans} = ${a} ${op} □`, a: `□ = ${b}` };
+        let lcm_val = d1 * d2 / gcd(d1, d2);
+        let val1 = n1 * (lcm_val / d1);
+        let val2 = n2 * (lcm_val / d2);
+        
+        if (op === '-') {
+            if (val1 < val2) {
+                let t = n1; n1 = n2; n2 = t;
+                t = d1; d1 = d2; d2 = t;
+                t = val1; val1 = val2; val2 = t;
             }
-        };
-
-        const add_sub_carry = (diff) => {
-            let op = Math.random() > 0.5 ? '+' : '-';
-            if (diff === 'easy') {
-                if (op === '+') {
-                    let a = Math.floor(Math.random() * 8) + 2; 
-                    let b = Math.floor(Math.random() * 8) + 2; 
-                    if (a + b < 11) b = 11 - a + Math.floor(Math.random() * (9 - (11 - a) + 1));
-                    if (b > 9) b = 9;
-                    if (a + b < 11) { a = 9; b = 8; }
-                    return { q: `${a} + ${b} = `, a: `${a + b}` };
-                } else {
-                    let b = Math.floor(Math.random() * 8) + 2; 
-                    let ans = Math.floor(Math.random() * 8) + 2; 
-                    let a = b + ans;
-                    if (a > 18 || a < 11) { a = 15; b = 7; ans = 8; }
-                    return { q: `${a} - ${b} = `, a: `${ans}` };
-                }
-            } else if (diff === 'normal') {
-                if (op === '+') {
-                    let a = Math.floor(Math.random() * 8) + 2;
-                    let b = Math.floor(Math.random() * 8) + 2;
-                    if (a + b < 11) b += 5;
-                    return Math.random() > 0.5 ? { q: `□ + ${b} = ${a + b}`, a: `□ = ${a}` } : { q: `${a} + □ = ${a + b}`, a: `□ = ${b}` };
-                } else {
-                    let b = Math.floor(Math.random() * 8) + 2;
-                    let ans = Math.floor(Math.random() * 8) + 2;
-                    let a = b + ans;
-                    return Math.random() > 0.5 ? { q: `□ - ${b} = ${ans}`, a: `□ = ${a}` } : { q: `${a} - □ = ${ans}`, a: `□ = ${b}` };
-                }
-            } else {
-                let a = Math.floor(Math.random() * 8) + 2;
-                let b = Math.floor(Math.random() * 8) + 2;
-                let c = Math.floor(Math.random() * 8) + 2;
-                if (a + b + c > 25) { a = 7; b = 5; c = 6; }
-                return { q: `${a} + ${b} + ${c} = `, a: `${a + b + c}` };
+            if (val1 === val2) {
+                op = '+';
             }
-        };
+        }
+        let ansN = op === '+' ? val1 + val2 : val1 - val2;
+        return { q: `\\frac{${n1}}{${d1}} ${op} \\frac{${n2}}{${d2}} = `, a: `${formatFrac(ansN, lcm_val)}` };
+    } else {
+        let d1 = Math.floor(Math.random() * 5) + 3;
+        let d2 = Math.floor(Math.random() * 5) + 3;
+        if (d1 === d2) d2++;
+        let i1 = Math.floor(Math.random() * 3) + 1;
+        let n1 = Math.floor(Math.random() * (d1 - 1)) + 1;
+        let n2 = Math.floor(Math.random() * (d2 - 1)) + 1;
+        
+        let num1 = i1 * d1 + n1;
+        let lcm_val = d1 * d2 / gcd(d1, d2);
+        let val1 = num1 * (lcm_val / d1);
+        let val2 = n2 * (lcm_val / d2);
+        
+        if (op === '-' && val1 <= val2) { op = '+'; }
+        let ansN = op === '+' ? val1 + val2 : val1 - val2;
+        return { q: `${i1}\\frac{${n1}}{${d1}} ${op} \\frac{${n2}}{${d2}} = `, a: `${formatFrac(ansN, lcm_val)}` };
+    }
+};
 
-        const add_sub_3nums = (diff) => {
-            if (diff === 'easy') {
-                let a = Math.floor(Math.random() * 5) + 1;
-                let b = Math.floor(Math.random() * 5) + 1;
-                let c = Math.floor(Math.random() * 5) + 1;
-                return { q: `${a} + ${b} + ${c} = `, a: `${a + b + c}` };
-            } else if (diff === 'normal') {
-                let a = Math.floor(Math.random() * 9) + 1;
-                let b = Math.floor(Math.random() * 9) + 1;
-                let c = Math.floor(Math.random() * 9) + 1;
-                if (a < b) { let t=a; a=b; b=t; }
-                return { q: `${a} - ${b} + ${c} = `, a: `${a - b + c}` };
-            } else {
-                let a = Math.floor(Math.random() * 9) + 10;
-                let b = Math.floor(Math.random() * 9) + 1;
-                let c = Math.floor(Math.random() * 9) + 1;
-                if (a - b < c) c = a - b;
-                return { q: `${a} - ${b} - ${c} = `, a: `${a - b - c}` };
-            }
-        };
+const gcd_lcm = (diff) => {
+    let type = Math.random() > 0.5 ? 'gcd' : 'lcm';
+    let a, b;
+    if (diff === 'easy') {
+        let factors = [2, 3, 5];
+        let c = factors[Math.floor(Math.random()*factors.length)];
+        a = c * (Math.floor(Math.random()*4)+1);
+        b = c * (Math.floor(Math.random()*4)+1);
+        if(a===b) b+=c;
+    } else if (diff === 'normal') {
+        a = Math.floor(Math.random() * 15) + 6;
+        b = Math.floor(Math.random() * 15) + 6;
+        if(a===b) b++;
+    } else {
+        a = Math.floor(Math.random() * 30) + 12;
+        b = Math.floor(Math.random() * 30) + 12;
+        if(a===b) b++;
+    }
+    
+    if (type === 'gcd') {
+        return { q: `${a} と ${b} の最大公約数を求めなさい`, a: `${gcd(a, b)}` };
+    } else {
+        return { q: `${a} と ${b} の最小公倍数を求めなさい`, a: `${(a * b) / gcd(a, b)}` };
+    }
+};
 
-        // 小学2年
-        const add_sub_2d = (diff) => {
-            let op = Math.random() > 0.5 ? '+' : '-';
-            if (diff === 'easy') {
-                if (op === '+') {
-                    let a1 = Math.floor(Math.random() * 8) + 1;
-                    let a2 = Math.floor(Math.random() * 8) + 1;
-                    let b1 = Math.floor(Math.random() * (9 - a1)) + 1;
-                    let b2 = Math.floor(Math.random() * (9 - a2)) + 1;
-                    let a = a1 * 10 + a2;
-                    let b = b1 * 10 + b2;
-                    return { q: `${a} + ${b} = `, a: `${a + b}` };
-                } else {
-                    let a1 = Math.floor(Math.random() * 8) + 2;
-                    let a2 = Math.floor(Math.random() * 8) + 2;
-                    let b1 = Math.floor(Math.random() * (a1 - 1)) + 1;
-                    let b2 = Math.floor(Math.random() * (a2 - 1)) + 1;
-                    let a = a1 * 10 + a2;
-                    let b = b1 * 10 + b2;
-                    return { q: `${a} - ${b} = `, a: `${a - b}` };
-                }
-            } else if (diff === 'normal') {
-                if (op === '+') {
-                    let a1 = Math.floor(Math.random() * 8) + 1;
-                    let a2 = Math.floor(Math.random() * 8) + 2;
-                    let b1 = Math.floor(Math.random() * (8 - a1)) + 1;
-                    let b2 = Math.floor(Math.random() * 8) + 2;
-                    if (a2 + b2 < 10) b2 = 10 - a2 + 1;
-                    if (b2 > 9) b2 = 9;
-                    let a = a1 * 10 + a2;
-                    let b = b1 * 10 + b2;
-                    return { q: `${a} + ${b} = `, a: `${a + b}` };
-                } else {
-                    let a1 = Math.floor(Math.random() * 8) + 2;
-                    let a2 = Math.floor(Math.random() * 8) + 1;
-                    let b1 = Math.floor(Math.random() * (a1 - 1)) + 1;
-                    let b2 = Math.floor(Math.random() * 8) + 2;
-                    if (a2 >= b2) a2 = b2 - 1;
-                    if (a2 < 0) a2 = 0;
-                    let a = a1 * 10 + a2;
-                    let b = b1 * 10 + b2;
-                    return { q: `${a} - ${b} = `, a: `${a - b}` };
-                }
-            } else {
-                if (op === '+') {
-                    let a = Math.floor(Math.random() * 90) + 10;
-                    let b = Math.floor(Math.random() * 90) + 10;
-                    if (a + b < 100) a += 50;
-                    return { q: `${a} + ${b} = `, a: `${a + b}` };
-                } else {
-                    let a = 100 + Math.floor(Math.random() * 50);
-                    let b = Math.floor(Math.random() * 90) + 10;
-                    return { q: `${a} - ${b} = `, a: `${a - b}` };
-                }
-            }
-        };
+const per_unit_quantity = (diff) => {
+    let items = [
+        { name: 'ジュース', unit1: 'mL', unit2: '円' },
+        { name: 'リボン', unit1: 'm', unit2: '円' },
+        { name: '針金', unit1: 'm', unit2: 'g' }
+    ];
+    let item = items[Math.floor(Math.random() * items.length)];
+    let basePrice = Math.floor(Math.random() * 50) + 20; // 100単位あたり 20~69
+    let qty1 = (Math.floor(Math.random() * 8) + 2) * 50; // 100, 150, 200, ...
+    let price1 = (qty1 / 100) * basePrice;
+    
+    let target = 1;
+    if (item.unit1 === 'mL') target = 1000;
+    
+    return { 
+        q: `${qty1}${item.unit1}で${price1}${item.unit2}の${item.name}があります。${target}${item.unit1}あたり何${item.unit2}ですか。`, 
+        a: `${(target / 100) * basePrice}${item.unit2}` 
+    };
+};
 
-        const multiplication_99 = (diff) => {
-            if (diff === 'easy') {
-                let a = Math.floor(Math.random() * 5) + 1; 
-                let b = Math.floor(Math.random() * 9) + 1; 
-                if (Math.random() > 0.5) { let t = a; a = b; b = t; }
-                return { q: `${a} \\times ${b} = `, a: `${a * b}` };
-            } else if (diff === 'normal') {
-                let a = Math.floor(Math.random() * 4) + 6; 
-                let b = Math.floor(Math.random() * 9) + 1; 
-                if (Math.random() > 0.5) { let t = a; a = b; b = t; }
-                return { q: `${a} \\times ${b} = `, a: `${a * b}` };
-            } else {
-                let a = Math.floor(Math.random() * 8) + 2; 
-                let b = Math.floor(Math.random() * 8) + 2; 
-                let ans = a * b;
-                return Math.random() > 0.5 ? { q: `□ \\times ${b} = ${ans}`, a: `□ = ${a}` } : { q: `${a} \\times □ = ${ans}`, a: `□ = ${b}` };
-            }
-        };
+// 小学6年・中学入試
+const fraction_mul_div = (diff) => {
+    let op = Math.random() > 0.5 ? '\\times' : '\\div';
+    
+    if (diff === 'easy') {
+        let d = Math.floor(Math.random() * 7) + 3;
+        let n = Math.floor(Math.random() * (d - 1)) + 1;
+        let i = Math.floor(Math.random() * 5) + 2;
+        if (op === '\\times') {
+            return Math.random() > 0.5 ? 
+                { q: `\\frac{${n}}{${d}} \\times ${i} = `, a: `${formatFrac(n * i, d)}` } :
+                { q: `${i} \\times \\frac{${n}}{${d}} = `, a: `${formatFrac(n * i, d)}` };
+        } else {
+            return { q: `\\frac{${n}}{${d}} \\div ${i} = `, a: `${formatFrac(n, d * i)}` };
+        }
+    } else if (diff === 'normal') {
+        let d1 = Math.floor(Math.random() * 7) + 2;
+        let n1 = Math.floor(Math.random() * (d1 - 1)) + 1;
+        let d2 = Math.floor(Math.random() * 7) + 2;
+        let n2 = Math.floor(Math.random() * (d2 - 1)) + 1;
+        
+        if (op === '\\times') {
+            return { q: `\\frac{${n1}}{${d1}} \\times \\frac{${n2}}{${d2}} = `, a: `${formatFrac(n1 * n2, d1 * d2)}` };
+        } else {
+            return { q: `\\frac{${n1}}{${d1}} \\div \\frac{${n2}}{${d2}} = `, a: `${formatFrac(n1 * d2, d1 * n2)}` };
+        }
+    } else {
+        let d1 = Math.floor(Math.random() * 5) + 2;
+        let n1 = Math.floor(Math.random() * (d1 - 1)) + 1;
+        let d2 = Math.floor(Math.random() * 5) + 2;
+        let n2 = Math.floor(Math.random() * (d2 - 1)) + 1;
+        let d3 = Math.floor(Math.random() * 5) + 2;
+        let n3 = Math.floor(Math.random() * (d3 - 1)) + 1;
+        
+        let ops = Math.random();
+        if (ops < 0.33) {
+            return { q: `\\frac{${n1}}{${d1}} \\times \\frac{${n2}}{${d2}} \\times \\frac{${n3}}{${d3}} = `, a: `${formatFrac(n1 * n2 * n3, d1 * d2 * d3)}` };
+        } else if (ops < 0.66) {
+            return { q: `\\frac{${n1}}{${d1}} \\times \\frac{${n2}}{${d2}} \\div \\frac{${n3}}{${d3}} = `, a: `${formatFrac(n1 * n2 * d3, d1 * d2 * n3)}` };
+        } else {
+            return { q: `\\frac{${n1}}{${d1}} \\div \\frac{${n2}}{${d2}} \\div \\frac{${n3}}{${d3}} = `, a: `${formatFrac(n1 * d2 * d3, d1 * n2 * n3)}` };
+        }
+    }
+};
 
-        const add_sub_bracket = (diff) => {
-            let a, b, c, ans;
-            if (diff === 'easy') {
-                a = Math.floor(Math.random() * 20) + 20; // 20-39
-                b = Math.floor(Math.random() * 10) + 10; // 10-19
-                c = Math.floor(Math.random() * 9) + 1;
-                ans = a - (b + c);
-                return { q: `${a} - (${b} + ${c}) = `, a: `${ans}` };
-            } else if (diff === 'normal') {
-                a = Math.floor(Math.random() * 40) + 40; // 40-79
-                b = Math.floor(Math.random() * 20) + 20; // 20-39
-                c = Math.floor(Math.random() * 19) + 1;
-                ans = a - (b - c);
-                return { q: `${a} - (${b} - ${c}) = `, a: `${ans}` };
-            } else {
-                a = Math.floor(Math.random() * 50) + 50; 
-                b = Math.floor(Math.random() * 30) + 20; 
-                c = Math.floor(Math.random() * 19) + 1;
-                ans = a - (b - c);
-                return { q: `${a} - (${b} - ${c}) = `, a: `${ans}` };
-            }
-        };
+const ratio = (diff) => {
+    if (diff === 'easy') {
+        let a = Math.floor(Math.random() * 15) + 2;
+        let b = Math.floor(Math.random() * 15) + 2;
+        let g = gcd(a, b);
+        let num = a / g;
+        let den = b / g;
+        let ans = den === 1 ? `${num}` : `\\frac{${num}}{${den}}`;
+        return { q: `${a} : ${b} 　の比の値を求めなさい`, a: ans };
+    } else if (diff === 'normal') {
+        let type = Math.floor(Math.random() * 3);
+        if (type === 0) { 
+            let g = Math.floor(Math.random() * 5) + 2;
+            let a = Math.floor(Math.random() * 8) + 1;
+            let b = Math.floor(Math.random() * 8) + 1;
+            if (a === b) b++;
+            return { q: `${a * g} : ${b * g} 　を簡単な整数の比にしなさい`, a: `${a / gcd(a, b)} : ${b / gcd(a, b)}` };
+        } else if (type === 1) { 
+            let a = Math.floor(Math.random() * 8) + 1;
+            let b = Math.floor(Math.random() * 8) + 1;
+            if (a === b) b++;
+            let decA = a / 10;
+            let decB = b / 10;
+            return { q: `${decA} : ${decB} 　を簡単な整数の比にしなさい`, a: `${a / gcd(a, b)} : ${b / gcd(a, b)}` };
+        } else { 
+            let d1 = Math.floor(Math.random() * 5) + 2;
+            let d2 = Math.floor(Math.random() * 5) + 2;
+            let n1 = 1;
+            let n2 = 1;
+            let a = n1 * d2;
+            let b = n2 * d1;
+            return { q: `\\frac{${n1}}{${d1}} : \\frac{${n2}}{${d2}} 　を簡単な整数の比にしなさい`, a: `${a / gcd(a, b)} : ${b / gcd(a, b)}` };
+        }
+    } else {
+        let a = Math.floor(Math.random() * 8) + 2;
+        let b = Math.floor(Math.random() * 8) + 2;
+        if (a === b) b++;
+        let m = Math.floor(Math.random() * 5) + 2;
+        if (Math.random() > 0.5) {
+            return { q: `${a} : ${b} = x : ${b * m} 　の x を求めなさい`, a: `x = ${a * m}` };
+        } else {
+            return { q: `${a} : ${b} = ${a * m} : x 　の x を求めなさい`, a: `x = ${b * m}` };
+        }
+    }
+};
 
-        // 小学3年
-        const add_sub_3d = (diff) => {
-            let op = Math.random() > 0.5 ? '+' : '-';
-            if (diff === 'easy') {
-                let a = Math.floor(Math.random() * 800) + 100;
-                let b = Math.floor(Math.random() * 800) + 100;
-                if (op === '+') {
-                    return { q: `${a} + ${b} = `, a: `${a + b}` };
-                } else {
-                    if (a < b) { let t = a; a = b; b = t; }
-                    return { q: `${a} - ${b} = `, a: `${a - b}` };
-                }
-            } else if (diff === 'normal') {
-                let a = Math.floor(Math.random() * 800) + 100;
-                let b = Math.floor(Math.random() * 800) + 100;
-                if (op === '+') {
-                    return { q: `${a} + ${b} = `, a: `${a + b}` };
-                } else {
-                    let a = Math.floor(Math.random() * 800) + 200;
-                    let b = Math.floor(Math.random() * (a - 100)) + 50;
-                    return { q: `${a} - ${b} = `, a: `${a - b}` };
-                }
-            } else {
-                let a = Math.floor(Math.random() * 8000) + 1000;
-                let b = Math.floor(Math.random() * 8000) + 1000;
-                if (op === '+') {
-                    return { q: `${a} + ${b} = `, a: `${a + b}` };
-                } else {
-                    if (a < b) { let t = a; a = b; b = t; }
-                    return { q: `${a} - ${b} = `, a: `${a - b}` };
-                }
-            }
-        };
+const algebraic_expression_elem = (diff) => {
+    if (diff === 'easy') {
+        let x = Math.floor(Math.random() * 50) + 10;
+        let a = Math.floor(Math.random() * 40) + 10;
+        let b = x + a;
+        if (Math.random() > 0.5) {
+            return { q: `x + ${a} = ${b} 　の x の値を求めなさい`, a: `x = ${x}` };
+        } else {
+            return { q: `x - ${a} = ${x - a} 　の x の値を求めなさい`, a: `x = ${x}` };
+        }
+    } else if (diff === 'normal') {
+        let x = Math.floor(Math.random() * 20) + 2;
+        let a = Math.floor(Math.random() * 8) + 2;
+        if (Math.random() > 0.5) {
+            return { q: `x \\times ${a} = ${x * a} 　の x を求めなさい`, a: `x = ${x}` };
+        } else {
+            let ans = x * a;
+            return { q: `x \\div ${a} = ${x} 　の x を求めなさい`, a: `x = ${ans}` };
+        }
+    } else {
+        let x = Math.floor(Math.random() * 15) + 2;
+        let a = Math.floor(Math.random() * 8) + 2;
+        let b = Math.floor(Math.random() * 20) + 5;
+        let c = a * x + b;
+        return { q: `x \\times ${a} + ${b} = ${c} 　の x を求めなさい`, a: `x = ${x}` };
+    }
+};
 
-        const multiplication_multi_digit = (diff) => {
-            if (diff === 'easy') {
-                let a = Math.floor(Math.random() * 90) + 10; // 2 digits
-                let b = Math.floor(Math.random() * 8) + 2;   // 1 digit
-                return { q: `${a} \\times ${b} = `, a: `${a * b}` };
-            } else if (diff === 'normal') {
-                let a = Math.floor(Math.random() * 900) + 100; // 3 digits
-                let b = Math.floor(Math.random() * 8) + 2;     // 1 digit
-                if (Math.random() > 0.5) {
-                    a = Math.floor(Math.random() * 90) + 10; // 2 digits
-                    b = Math.floor(Math.random() * 90) + 10; // 2 digits
-                }
-                return { q: `${a} \\times ${b} = `, a: `${a * b}` };
-            } else {
-                let a = Math.floor(Math.random() * 900) + 100; // 3 digits
-                let b = Math.floor(Math.random() * 90) + 10;   // 2 digits
-                return { q: `${a} \\times ${b} = `, a: `${a * b}` };
-            }
-        };
+const complex_mixed_operations = (diff) => {
+    let type = Math.floor(Math.random() * 3);
+    if (type === 0) {
+        // (A + B) * C - D
+        let a = Math.floor(Math.random() * 50) + 10;
+        let b = Math.floor(Math.random() * 50) + 10;
+        let c = Math.floor(Math.random() * 8) + 2;
+        let d = Math.floor(Math.random() * 50) + 10;
+        let ans = (a + b) * c - d;
+        return { q: `(${a} + ${b}) \\times ${c} - ${d} = `, a: `${ans}` };
+    } else if (type === 1) {
+        // A * B + C * D
+        let a = Math.floor(Math.random() * 20) + 10;
+        let b = Math.floor(Math.random() * 8) + 2;
+        let c = Math.floor(Math.random() * 20) + 10;
+        let d = Math.floor(Math.random() * 8) + 2;
+        let ans = a * b + c * d;
+        return { q: `${a} \\times ${b} + ${c} \\times ${d} = `, a: `${ans}` };
+    } else {
+        // A - B / C * D
+        let b = Math.floor(Math.random() * 10) + 2;
+        let c = Math.floor(Math.random() * 5) + 2;
+        let b_val = b * c;
+        let d = Math.floor(Math.random() * 8) + 2;
+        let a = Math.floor(Math.random() * 50) + 50;
+        let ans = a - (b_val / c) * d;
+        return { q: `${a} - ${b_val} \\div ${c} \\times ${d} = `, a: `${ans}` };
+    }
+};
 
-        const division_rem = (diff) => {
-            if (diff === 'easy') {
-                let b = Math.floor(Math.random() * 8) + 2; 
-                let c = Math.floor(Math.random() * 9) + 1; 
-                let a = b * c;
-                return { q: `${a} \\div ${b} = `, a: `${c}` };
-            } else if (diff === 'normal') {
-                let b = Math.floor(Math.random() * 6) + 4; 
-                let c = Math.floor(Math.random() * 8) + 1; 
-                let r = Math.floor(Math.random() * (b - 1)) + 1; 
-                let a = b * c + r;
-                return { q: `${a} \\div ${b} = `, a: `${c} あまり ${r}` };
-            } else {
-                let b = Math.floor(Math.random() * 7) + 3; 
-                let c = Math.floor(Math.random() * 15) + 10; 
-                let r = Math.floor(Math.random() * b); 
-                let a = b * c + r;
-                if (a >= 100) { a = 99; c = Math.floor(a / b); r = a % b; }
-                return { q: `${a} \\div ${b} = `, a: r === 0 ? `${c}` : `${c} あまり ${r}` };
-            }
-        };
+const reverse_calculation = (diff) => {
+    let type = Math.floor(Math.random() * 3);
+    if (type === 0) {
+        // A + □ * B = C
+        let ans = Math.floor(Math.random() * 10) + 2;
+        let b = Math.floor(Math.random() * 8) + 2;
+        let a = Math.floor(Math.random() * 20) + 10;
+        let c = a + ans * b;
+        return { q: `${a} + □ \\times ${b} = ${c}　の □ にあてはまる数を求めなさい`, a: `□ = ${ans}` };
+    } else if (type === 1) {
+        // (□ - A) / B = C
+        let a = Math.floor(Math.random() * 15) + 5;
+        let b = Math.floor(Math.random() * 8) + 2;
+        let c = Math.floor(Math.random() * 10) + 2;
+        let ans = c * b + a;
+        return { q: `(□ - ${a}) \\div ${b} = ${c}　の □ にあてはまる数を求めなさい`, a: `□ = ${ans}` };
+    } else {
+        // A - B / □ = C 
+        let a = Math.floor(Math.random() * 20) + 15;
+        let c = Math.floor(Math.random() * 10) + 2;
+        let ans = Math.floor(Math.random() * 8) + 2;
+        let b = (a - c) * ans;
+        return { q: `${a} - ${b} \\div □ = ${c}　の □ にあてはまる数を求めなさい`, a: `□ = ${ans}` };
+    }
+};
 
-        const fraction_add_sub_same_den = (diff) => {
-            let d = Math.floor(Math.random() * 7) + 3; 
-            let n1 = Math.floor(Math.random() * (d - 1)) + 1;
-            let n2 = Math.floor(Math.random() * (d - 1)) + 1;
-            let op = Math.random() > 0.5 ? '+' : '-';
-            if (diff === 'easy') op = '+';
-            if (diff === 'normal') op = Math.random() > 0.5 ? '+' : '-';
-            if (diff === 'hard') {
-                n1 = Math.floor(Math.random() * (d * 2)) + 1;
-                n2 = Math.floor(Math.random() * (d * 2)) + 1;
-            }
+const generators = {
+    add_sub_10,
+    add_sub_carry,
+    add_sub_3nums,
+    add_sub_2d,
+    multiplication_99,
+    add_sub_bracket,
+    add_sub_3d,
+    multiplication_multi_digit,
+    division_rem,
+    fraction_add_sub_same_den,
+    decimal_add_sub_3rd,
+    decimal_add_sub,
+    division_2d,
+    decimal_mul_div_int,
+    mixed_operations,
+    decimal_mul_div,
+    fraction_add_sub,
+    gcd_lcm,
+    per_unit_quantity,
+    fraction_mul_div,
+    ratio,
+    algebraic_expression_elem,
+    complex_mixed_operations,
+    reverse_calculation
+};
 
-            if (op === '-') {
-                if (n1 < n2) { let t = n1; n1 = n2; n2 = t; }
-                if (n1 === n2) { n1++; }
-            }
-            let ansN = op === '+' ? n1 + n2 : n1 - n2;
-            
-            let q_n1 = `\\frac{${n1}}{${d}}`;
-            let q_n2 = `\\frac{${n2}}{${d}}`;
-
-            return { q: `${q_n1} ${op} ${q_n2} = `, a: `${formatFrac(ansN, d)}` };
-        };
-
-        const decimal_add_sub_3rd = (diff) => {
-            let op = Math.random() > 0.5 ? '+' : '-';
-            let a = Math.floor(Math.random() * 98) + 1; // 0.1 to 9.9
-            let b = Math.floor(Math.random() * 98) + 1;
-            if (op === '-') {
-                if (a < b) { let t = a; a = b; b = t; }
-                if (a === b) a++;
-            }
-            let ans = op === '+' ? a + b : a - b;
-            return { q: `${a / 10} ${op} ${b / 10} = `, a: `${ans / 10}` };
-        };
-
-        // 小学4年
-        const decimal_add_sub = (diff) => {
-            let op = Math.random() > 0.5 ? '+' : '-';
-            if (diff === 'easy') {
-                let a = (Math.floor(Math.random() * 89) + 11) / 10; 
-                let b = (Math.floor(Math.random() * 89) + 11) / 10;
-                if (op === '-') {
-                    if (a < b) { let t = a; a = b; b = t; }
-                }
-                let ans = op === '+' ? a + b : a - b;
-                return { q: `${a} ${op} ${b} = `, a: `${Math.round(ans * 10) / 10}` };
-            } else if (diff === 'normal') {
-                let a = (Math.floor(Math.random() * 89) * 10 + Math.floor(Math.random() * 9) + 1) / 100;
-                let b = (Math.floor(Math.random() * 89) + 11) / 10;
-                if (Math.random() > 0.5) { let t = a; a = b; b = t; }
-                if (op === '-') {
-                    if (a < b) { let t = a; a = b; b = t; }
-                }
-                let ans = op === '+' ? a + b : a - b;
-                return { q: `${a} ${op} ${b} = `, a: `${Math.round(ans * 100) / 100}` };
-            } else {
-                if (op === '+') {
-                    let a = Math.floor(Math.random() * 9) + 1;
-                    let b = (Math.floor(Math.random() * 89) * 10 + Math.floor(Math.random() * 9) + 1) / 100;
-                    if (Math.random() > 0.5) { let t = a; a = b; b = t; }
-                    return { q: `${a} + ${b} = `, a: `${Math.round((a + b) * 100) / 100}` };
-                } else {
-                    let a = Math.floor(Math.random() * 9) + 2;
-                    let b = (Math.floor(Math.random() * (a * 100 - 100))) / 100;
-                    if (b <= 0) b = 0.5;
-                    return { q: `${a} - ${b} = `, a: `${Math.round((a - b) * 100) / 100}` };
-                }
-            }
-        };
-
-        const division_2d = (diff) => {
-            if (diff === 'easy') {
-                let c = Math.floor(Math.random() * 7) + 2; 
-                let b = Math.floor(Math.random() * 10) + 11; 
-                if (b * c >= 100) b = Math.floor(99 / c);
-                let a = b * c;
-                return { q: `${a} \\div ${b} = `, a: `${c}` };
-            } else if (diff === 'normal') {
-                let c = Math.floor(Math.random() * 7) + 3; 
-                let b = Math.floor(Math.random() * 70) + 20; 
-                let r = Math.floor(Math.random() * (b - 1)) + 1;
-                let a = b * c + r;
-                return { q: `${a} \\div ${b} = `, a: `${c} あまり ${r}` };
-            } else {
-                let c = Math.floor(Math.random() * 40) + 11; 
-                let b = Math.floor(Math.random() * 15) + 12; 
-                let r = Math.floor(Math.random() * b);
-                let a = b * c + r;
-                if (a >= 1000) a = 999;
-                c = Math.floor(a / b);
-                r = a % b;
-                return { q: `${a} \\div ${b} = `, a: r === 0 ? `${c}` : `${c} あまり ${r}` };
-            }
-        };
-
-        const decimal_mul_div_int = (diff) => {
-            let op = Math.random() > 0.5 ? '\\times' : '\\div';
-            if (op === '\\times') {
-                let a = (Math.floor(Math.random() * 89) + 11) / 10;
-                let b = Math.floor(Math.random() * 8) + 2;
-                return { q: `${a} \\times ${b} = `, a: `${Math.round(a * b * 10) / 10}` };
-            } else {
-                let c = (Math.floor(Math.random() * 89) + 11) / 10;
-                let b = Math.floor(Math.random() * 8) + 2;
-                let a = Math.round(c * b * 10) / 10;
-                return { q: `${a} \\div ${b} = `, a: `${c}` };
-            }
-        };
-
-        const mixed_operations = (diff) => {
-            if (diff === 'easy') {
-                let a = Math.floor(Math.random() * 8) + 2;
-                let b = Math.floor(Math.random() * 8) + 2;
-                let c = Math.floor(Math.random() * 8) + 2;
-                let ans = a * b + c;
-                return { q: `${a} \\times ${b} + ${c} = `, a: `${ans}` };
-            } else if (diff === 'normal') {
-                let a = Math.floor(Math.random() * 8) + 2;
-                let b = Math.floor(Math.random() * 8) + 2;
-                let c = Math.floor(Math.random() * 8) + 2;
-                let d = Math.floor(Math.random() * 8) + 2;
-                let ans = a * b - c * d;
-                if (ans < 0) { let t = a; a = c; c = t; t = b; b = d; d = t; ans = -ans; }
-                return { q: `${a} \\times ${b} - ${c} \\times ${d} = `, a: `${ans}` };
-            } else {
-                let a = Math.floor(Math.random() * 8) + 2;
-                let b = Math.floor(Math.random() * 8) + 2;
-                let c = Math.floor(Math.random() * 8) + 2;
-                let d = Math.floor(Math.random() * 8) + 2;
-                let ans = a * (b + c) - d;
-                return { q: `${a} \\times (${b} + ${c}) - ${d} = `, a: `${ans}` };
-            }
-        };
-
-        // 小学5年
-        const decimal_mul_div = (diff) => {
-            let op = Math.random() > 0.5 ? '\\times' : '\\div';
-            if (diff === 'easy') {
-                if (op === '\\times') {
-                    let a = (Math.floor(Math.random() * 89) + 11) / 10;
-                    let b = Math.floor(Math.random() * 8) + 2;
-                    return { q: `${a} \\times ${b} = `, a: `${Math.round(a * b * 10) / 10}` };
-                } else {
-                    let c = (Math.floor(Math.random() * 89) + 11) / 10;
-                    let b = Math.floor(Math.random() * 8) + 2;
-                    let a = Math.round(c * b * 10) / 10;
-                    return { q: `${a} \\div ${b} = `, a: `${c}` };
-                }
-            } else if (diff === 'normal') {
-                if (op === '\\times') {
-                    let a = (Math.floor(Math.random() * 89) + 11) / 10;
-                    let b = (Math.floor(Math.random() * 89) + 11) / 10;
-                    return { q: `${a} \\times ${b} = `, a: `${Math.round(a * b * 100) / 100}` };
-                } else {
-                    let c = (Math.floor(Math.random() * 89) + 11) / 10;
-                    let b = (Math.floor(Math.random() * 89) + 11) / 10;
-                    let a = Math.round(c * b * 100) / 100;
-                    return { q: `${a} \\div ${b} = `, a: `${c}` };
-                }
-            } else {
-                if (op === '\\times') {
-                    let a = (Math.floor(Math.random() * 89) + 11) / 10;
-                    let arr = [2.5, 4, 1.25, 8];
-                    let b = arr[Math.floor(Math.random() * 2) * 2]; 
-                    let c = b === 2.5 ? 4 : 8;
-                    return { q: `${a} \\times ${b} \\times ${c} = `, a: `${Math.round(a * b * c * 10) / 10}` };
-                } else {
-                    let b = (Math.floor(Math.random() * 40) + 11) / 10; 
-                    let c = Math.floor(Math.random() * 8) + 2; 
-                    let r = (Math.floor(Math.random() * (b * 10 - 1)) + 1) / 10;
-                    let a = Math.round((b * c + r) * 10) / 10;
-                    return { q: `${a} \\div ${b} 　(商は整数で求め、あまりもだす)`, a: `${c} あまり ${r}` };
-                }
-            }
-        };
-
-        const fraction_add_sub = (diff) => {
-            let op = Math.random() > 0.5 ? '+' : '-';
-            
-            if (diff === 'easy') {
-                let m = Math.floor(Math.random() * 3) + 2; // 2, 3, 4
-                let d1 = Math.floor(Math.random() * 4) + 2; // 2, 3, 4, 5
-                let d2 = d1 * m;
-                let n1 = Math.floor(Math.random() * (d1 - 1)) + 1;
-                let n2 = Math.floor(Math.random() * (d2 - 1)) + 1;
-                let val1 = n1 * m;
-                let val2 = n2;
-                if (op === '-') {
-                    if (val1 < val2) { let t=n1; n1=n2; n2=t; t=d1; d1=d2; d2=t; t=val1; val1=val2; val2=t; }
-                    if (val1 === val2) { op = '+'; }
-                }
-                let ansN = op === '+' ? val1 + val2 : val1 - val2;
-                return { q: `\\frac{${n1}}{${d1}} ${op} \\frac{${n2}}{${d2}} = `, a: `${formatFrac(ansN, d2)}` };
-            } else if (diff === 'normal') {
-                let d1 = Math.floor(Math.random() * 6) + 2;
-                let d2 = Math.floor(Math.random() * 6) + 2;
-                if (d1 === d2) d2++;
-                let n1 = Math.floor(Math.random() * (d1 - 1)) + 1;
-                let n2 = Math.floor(Math.random() * (d2 - 1)) + 1;
-                
-                let lcm_val = d1 * d2 / gcd(d1, d2);
-                let val1 = n1 * (lcm_val / d1);
-                let val2 = n2 * (lcm_val / d2);
-                
-                if (op === '-') {
-                    if (val1 < val2) {
-                        let t = n1; n1 = n2; n2 = t;
-                        t = d1; d1 = d2; d2 = t;
-                        t = val1; val1 = val2; val2 = t;
-                    }
-                    if (val1 === val2) {
-                        op = '+';
-                    }
-                }
-                let ansN = op === '+' ? val1 + val2 : val1 - val2;
-                return { q: `\\frac{${n1}}{${d1}} ${op} \\frac{${n2}}{${d2}} = `, a: `${formatFrac(ansN, lcm_val)}` };
-            } else {
-                let d1 = Math.floor(Math.random() * 5) + 3;
-                let d2 = Math.floor(Math.random() * 5) + 3;
-                if (d1 === d2) d2++;
-                let i1 = Math.floor(Math.random() * 3) + 1;
-                let n1 = Math.floor(Math.random() * (d1 - 1)) + 1;
-                let n2 = Math.floor(Math.random() * (d2 - 1)) + 1;
-                
-                let num1 = i1 * d1 + n1;
-                let lcm_val = d1 * d2 / gcd(d1, d2);
-                let val1 = num1 * (lcm_val / d1);
-                let val2 = n2 * (lcm_val / d2);
-                
-                if (op === '-' && val1 <= val2) { op = '+'; }
-                let ansN = op === '+' ? val1 + val2 : val1 - val2;
-                return { q: `${i1}\\frac{${n1}}{${d1}} ${op} \\frac{${n2}}{${d2}} = `, a: `${formatFrac(ansN, lcm_val)}` };
-            }
-        };
-
-        const gcd_lcm = (diff) => {
-            let type = Math.random() > 0.5 ? 'gcd' : 'lcm';
-            let a, b;
-            if (diff === 'easy') {
-                let factors = [2, 3, 5];
-                let c = factors[Math.floor(Math.random()*factors.length)];
-                a = c * (Math.floor(Math.random()*4)+1);
-                b = c * (Math.floor(Math.random()*4)+1);
-                if(a===b) b+=c;
-            } else if (diff === 'normal') {
-                a = Math.floor(Math.random() * 15) + 6;
-                b = Math.floor(Math.random() * 15) + 6;
-                if(a===b) b++;
-            } else {
-                a = Math.floor(Math.random() * 30) + 12;
-                b = Math.floor(Math.random() * 30) + 12;
-                if(a===b) b++;
-            }
-            
-            if (type === 'gcd') {
-                return { q: `${a} と ${b} の最大公約数を求めなさい`, a: `${gcd(a, b)}` };
-            } else {
-                return { q: `${a} と ${b} の最小公倍数を求めなさい`, a: `${(a * b) / gcd(a, b)}` };
-            }
-        };
-
-        const per_unit_quantity = (diff) => {
-            let items = [
-                { name: 'ジュース', unit1: 'mL', unit2: '円' },
-                { name: 'リボン', unit1: 'm', unit2: '円' },
-                { name: '針金', unit1: 'm', unit2: 'g' }
-            ];
-            let item = items[Math.floor(Math.random() * items.length)];
-            let basePrice = Math.floor(Math.random() * 50) + 20; // 100単位あたり 20~69
-            let qty1 = (Math.floor(Math.random() * 8) + 2) * 50; // 100, 150, 200, ...
-            let price1 = (qty1 / 100) * basePrice;
-            
-            let target = 1;
-            if (item.unit1 === 'mL') target = 1000;
-            
-            return { 
-                q: `${qty1}${item.unit1}で${price1}${item.unit2}の${item.name}があります。${target}${item.unit1}あたり何${item.unit2}ですか。`, 
-                a: `${(target / 100) * basePrice}${item.unit2}` 
-            };
-        };
-
-        // 小学6年・中学入試
-        const fraction_mul_div = (diff) => {
-            let op = Math.random() > 0.5 ? '\\times' : '\\div';
-            
-            if (diff === 'easy') {
-                let d = Math.floor(Math.random() * 7) + 3;
-                let n = Math.floor(Math.random() * (d - 1)) + 1;
-                let i = Math.floor(Math.random() * 5) + 2;
-                if (op === '\\times') {
-                    return Math.random() > 0.5 ? 
-                        { q: `\\frac{${n}}{${d}} \\times ${i} = `, a: `${formatFrac(n * i, d)}` } :
-                        { q: `${i} \\times \\frac{${n}}{${d}} = `, a: `${formatFrac(n * i, d)}` };
-                } else {
-                    return { q: `\\frac{${n}}{${d}} \\div ${i} = `, a: `${formatFrac(n, d * i)}` };
-                }
-            } else if (diff === 'normal') {
-                let d1 = Math.floor(Math.random() * 7) + 2;
-                let n1 = Math.floor(Math.random() * (d1 - 1)) + 1;
-                let d2 = Math.floor(Math.random() * 7) + 2;
-                let n2 = Math.floor(Math.random() * (d2 - 1)) + 1;
-                
-                if (op === '\\times') {
-                    return { q: `\\frac{${n1}}{${d1}} \\times \\frac{${n2}}{${d2}} = `, a: `${formatFrac(n1 * n2, d1 * d2)}` };
-                } else {
-                    return { q: `\\frac{${n1}}{${d1}} \\div \\frac{${n2}}{${d2}} = `, a: `${formatFrac(n1 * d2, d1 * n2)}` };
-                }
-            } else {
-                let d1 = Math.floor(Math.random() * 5) + 2;
-                let n1 = Math.floor(Math.random() * (d1 - 1)) + 1;
-                let d2 = Math.floor(Math.random() * 5) + 2;
-                let n2 = Math.floor(Math.random() * (d2 - 1)) + 1;
-                let d3 = Math.floor(Math.random() * 5) + 2;
-                let n3 = Math.floor(Math.random() * (d3 - 1)) + 1;
-                
-                let ops = Math.random();
-                if (ops < 0.33) {
-                    return { q: `\\frac{${n1}}{${d1}} \\times \\frac{${n2}}{${d2}} \\times \\frac{${n3}}{${d3}} = `, a: `${formatFrac(n1 * n2 * n3, d1 * d2 * d3)}` };
-                } else if (ops < 0.66) {
-                    return { q: `\\frac{${n1}}{${d1}} \\times \\frac{${n2}}{${d2}} \\div \\frac{${n3}}{${d3}} = `, a: `${formatFrac(n1 * n2 * d3, d1 * d2 * n3)}` };
-                } else {
-                    return { q: `\\frac{${n1}}{${d1}} \\div \\frac{${n2}}{${d2}} \\div \\frac{${n3}}{${d3}} = `, a: `${formatFrac(n1 * d2 * d3, d1 * n2 * n3)}` };
-                }
-            }
-        };
-
-        const ratio = (diff) => {
-            if (diff === 'easy') {
-                let a = Math.floor(Math.random() * 15) + 2;
-                let b = Math.floor(Math.random() * 15) + 2;
-                let g = gcd(a, b);
-                let num = a / g;
-                let den = b / g;
-                let ans = den === 1 ? `${num}` : `\\frac{${num}}{${den}}`;
-                return { q: `${a} : ${b} 　の比の値を求めなさい`, a: ans };
-            } else if (diff === 'normal') {
-                let type = Math.floor(Math.random() * 3);
-                if (type === 0) { 
-                    let g = Math.floor(Math.random() * 5) + 2;
-                    let a = Math.floor(Math.random() * 8) + 1;
-                    let b = Math.floor(Math.random() * 8) + 1;
-                    if (a === b) b++;
-                    return { q: `${a * g} : ${b * g} 　を簡単な整数の比にしなさい`, a: `${a / gcd(a, b)} : ${b / gcd(a, b)}` };
-                } else if (type === 1) { 
-                    let a = Math.floor(Math.random() * 8) + 1;
-                    let b = Math.floor(Math.random() * 8) + 1;
-                    if (a === b) b++;
-                    let decA = a / 10;
-                    let decB = b / 10;
-                    return { q: `${decA} : ${decB} 　を簡単な整数の比にしなさい`, a: `${a / gcd(a, b)} : ${b / gcd(a, b)}` };
-                } else { 
-                    let d1 = Math.floor(Math.random() * 5) + 2;
-                    let d2 = Math.floor(Math.random() * 5) + 2;
-                    let n1 = 1;
-                    let n2 = 1;
-                    let a = n1 * d2;
-                    let b = n2 * d1;
-                    return { q: `\\frac{${n1}}{${d1}} : \\frac{${n2}}{${d2}} 　を簡単な整数の比にしなさい`, a: `${a / gcd(a, b)} : ${b / gcd(a, b)}` };
-                }
-            } else {
-                let a = Math.floor(Math.random() * 8) + 2;
-                let b = Math.floor(Math.random() * 8) + 2;
-                if (a === b) b++;
-                let m = Math.floor(Math.random() * 5) + 2;
-                if (Math.random() > 0.5) {
-                    return { q: `${a} : ${b} = x : ${b * m} 　の x を求めなさい`, a: `x = ${a * m}` };
-                } else {
-                    return { q: `${a} : ${b} = ${a * m} : x 　の x を求めなさい`, a: `x = ${b * m}` };
-                }
-            }
-        };
-
-        const algebraic_expression_elem = (diff) => {
-            if (diff === 'easy') {
-                let x = Math.floor(Math.random() * 50) + 10;
-                let a = Math.floor(Math.random() * 40) + 10;
-                let b = x + a;
-                if (Math.random() > 0.5) {
-                    return { q: `x + ${a} = ${b} 　の x の値を求めなさい`, a: `x = ${x}` };
-                } else {
-                    return { q: `x - ${a} = ${x - a} 　の x の値を求めなさい`, a: `x = ${x}` };
-                }
-            } else if (diff === 'normal') {
-                let x = Math.floor(Math.random() * 20) + 2;
-                let a = Math.floor(Math.random() * 8) + 2;
-                if (Math.random() > 0.5) {
-                    return { q: `x \\times ${a} = ${x * a} 　の x を求めなさい`, a: `x = ${x}` };
-                } else {
-                    let ans = x * a;
-                    return { q: `x \\div ${a} = ${x} 　の x を求めなさい`, a: `x = ${ans}` };
-                }
-            } else {
-                let x = Math.floor(Math.random() * 15) + 2;
-                let a = Math.floor(Math.random() * 8) + 2;
-                let b = Math.floor(Math.random() * 20) + 5;
-                let c = a * x + b;
-                return { q: `x \\times ${a} + ${b} = ${c} 　の x を求めなさい`, a: `x = ${x}` };
-            }
-        };
-
-        const complex_mixed_operations = (diff) => {
-            let type = Math.floor(Math.random() * 3);
-            if (type === 0) {
-                // (A + B) * C - D
-                let a = Math.floor(Math.random() * 50) + 10;
-                let b = Math.floor(Math.random() * 50) + 10;
-                let c = Math.floor(Math.random() * 8) + 2;
-                let d = Math.floor(Math.random() * 50) + 10;
-                let ans = (a + b) * c - d;
-                return { q: `(${a} + ${b}) \\times ${c} - ${d} = `, a: `${ans}` };
-            } else if (type === 1) {
-                // A * B + C * D
-                let a = Math.floor(Math.random() * 20) + 10;
-                let b = Math.floor(Math.random() * 8) + 2;
-                let c = Math.floor(Math.random() * 20) + 10;
-                let d = Math.floor(Math.random() * 8) + 2;
-                let ans = a * b + c * d;
-                return { q: `${a} \\times ${b} + ${c} \\times ${d} = `, a: `${ans}` };
-            } else {
-                // A - B / C * D
-                let b = Math.floor(Math.random() * 10) + 2;
-                let c = Math.floor(Math.random() * 5) + 2;
-                let b_val = b * c;
-                let d = Math.floor(Math.random() * 8) + 2;
-                let a = Math.floor(Math.random() * 50) + 50;
-                let ans = a - (b_val / c) * d;
-                return { q: `${a} - ${b_val} \\div ${c} \\times ${d} = `, a: `${ans}` };
-            }
-        };
-
-        const reverse_calculation = (diff) => {
-            let type = Math.floor(Math.random() * 3);
-            if (type === 0) {
-                // A + □ * B = C
-                let ans = Math.floor(Math.random() * 10) + 2;
-                let b = Math.floor(Math.random() * 8) + 2;
-                let a = Math.floor(Math.random() * 20) + 10;
-                let c = a + ans * b;
-                return { q: `${a} + □ \\times ${b} = ${c}　の □ にあてはまる数を求めなさい`, a: `□ = ${ans}` };
-            } else if (type === 1) {
-                // (□ - A) / B = C
-                let a = Math.floor(Math.random() * 15) + 5;
-                let b = Math.floor(Math.random() * 8) + 2;
-                let c = Math.floor(Math.random() * 10) + 2;
-                let ans = c * b + a;
-                return { q: `(□ - ${a}) \\div ${b} = ${c}　の □ にあてはまる数を求めなさい`, a: `□ = ${ans}` };
-            } else {
-                // A - B / □ = C 
-                let a = Math.floor(Math.random() * 20) + 15;
-                let c = Math.floor(Math.random() * 10) + 2;
-                let ans = Math.floor(Math.random() * 8) + 2;
-                let b = (a - c) * ans;
-                return { q: `${a} - ${b} \\div □ = ${c}　の □ にあてはまる数を求めなさい`, a: `□ = ${ans}` };
-            }
-        };
-
-        const generators = {
-            add_sub_10,
-            add_sub_carry,
-            add_sub_3nums,
-            add_sub_2d,
-            multiplication_99,
-            add_sub_bracket,
-            add_sub_3d,
-            multiplication_multi_digit,
-            division_rem,
-            fraction_add_sub_same_den,
-            decimal_add_sub_3rd,
-            decimal_add_sub,
-            division_2d,
-            decimal_mul_div_int,
-            mixed_operations,
-            decimal_mul_div,
-            fraction_add_sub,
-            gcd_lcm,
-            per_unit_quantity,
-            fraction_mul_div,
-            ratio,
-            algebraic_expression_elem,
-            complex_mixed_operations,
-            reverse_calculation
-        };
-
-        // --- Math Renderer ---
-        const renderContent = (str) => {
-            if (!str) return null;
-            
-            // \times \div の置換のみ行う（\Boxや\quadはジェネレーター側で処理済み）
-            let processedStr = str.replace(/\\times/g, '×').replace(/\\div/g, '÷');
-            
-            const tokens = processedStr.split(/(\\frac{[^{}]+}{[^{}]+}|\\sqrt{[^{}]+})/g);
-            
-            return (
-                <span className="inline-flex items-center flex-wrap leading-loose">
-                    {tokens.map((token, i) => {
-                        if (token.startsWith('\\frac')) {
-                            const match = /\\frac{([^{}]+)}{([^{}]+)}/.exec(token);
-                            if (match) {
-                                return (
-                                    <span key={i} className="inline-flex flex-col items-center justify-center align-middle mx-1.5 -translate-y-1">
-                                        <span className="border-b border-gray-800 px-1 text-[0.8em] leading-none pb-0.5">{renderSimpleMath(match[1])}</span>
-                                        <span className="text-[0.8em] leading-none pt-0.5">{renderSimpleMath(match[2])}</span>
-                                    </span>
-                                );
-                            }
-                        } else if (token.startsWith('\\sqrt')) {
-                            const match = /\\sqrt{([^{}]+)}/.exec(token);
-                            if (match) {
-                                return (
-                                    <span key={i} className="whitespace-nowrap inline-flex items-center mx-0.5">
-                                        <span className="text-[1.1em] leading-none -mr-[1px] translate-y-[2px]">&radic;</span>
-                                        <span className="border-t border-gray-800 pt-[1px] leading-none tracking-normal pr-0.5">{renderSimpleMath(match[1])}</span>
-                                    </span>
-                                );
-                            }
-                        }
-                        return <span key={i} className="inline-block leading-relaxed">{renderSimpleMath(token)}</span>;
-                    })}
-                </span>
-            );
-        };
-
-        const renderSimpleMath = (str) => {
-            const parts = str.split('^2');
-            if (parts.length === 1) return str;
-            return (
-                <React.Fragment>
-                    {parts.map((part, i) => (
-                        <React.Fragment key={i}>
-                            {part}
-                            {i < parts.length - 1 && <sup className="text-[0.7em] align-super font-serif">2</sup>}
-                        </React.Fragment>
-                    ))}
+// --- Math Renderer ---
+const renderSimpleMath = (str) => {
+    const parts = str.split('^2');
+    if (parts.length === 1) return str;
+    return (
+        <>
+            {parts.map((part, i) => (
+                <React.Fragment key={i}>
+                    {part}
+                    {i < parts.length - 1 && <sup className="text-[0.7em] align-super font-serif">2</sup>}
                 </React.Fragment>
-            );
-        };
+            ))}
+        </>
+    );
+};
 
-        // --- Main App ---
-        function App() {
-            const unitsGrouped = [
-                {
-                    grade: '小学1年',
-                    items: [
-                        { id: 'add_sub_10', name: '10までのたし算・ひき算' },
-                        { id: 'add_sub_carry', name: 'くり上がりのあるたし算・ひき算' },
-                        { id: 'add_sub_3nums', name: '3つの数の計算' },
-                    ]
-                },
-                {
-                    grade: '小学2年',
-                    items: [
-                        { id: 'add_sub_2d', name: '2けたのたし算・ひき算' },
-                        { id: 'multiplication_99', name: 'かけ算九九' },
-                        { id: 'add_sub_bracket', name: 'かっこを使った計算' },
-                    ]
-                },
-                {
-                    grade: '小学3年',
-                    items: [
-                        { id: 'add_sub_3d', name: '3けた・4けたのたし算・ひき算' },
-                        { id: 'multiplication_multi_digit', name: 'かけ算の筆算' },
-                        { id: 'division_rem', name: 'あまりのあるわり算' },
-                        { id: 'fraction_add_sub_same_den', name: '分数のたし算・ひき算 (同分母)' },
-                        { id: 'decimal_add_sub_3rd', name: '小数のたし算・ひき算 (小3)' },
-                    ]
-                },
-                {
-                    grade: '小学4年',
-                    items: [
-                        { id: 'decimal_add_sub', name: '小数のたし算・ひき算' },
-                        { id: 'division_2d', name: '2けたでわるわり算 (筆算)' },
-                        { id: 'decimal_mul_div_int', name: '小数と整数の乗除' },
-                        { id: 'mixed_operations', name: '四則混合計算' },
-                    ]
-                },
-                {
-                    grade: '小学5年',
-                    items: [
-                        { id: 'decimal_mul_div', name: '小数同士の乗除' },
-                        { id: 'fraction_add_sub', name: '分数のたし算・ひき算 (異分母)' },
-                        { id: 'gcd_lcm', name: '最大公約数・最小公倍数' },
-                        { id: 'per_unit_quantity', name: '単位量あたりの大きさ' },
-                    ]
-                },
-                {
-                    grade: '小学6年・中学入試',
-                    items: [
-                        { id: 'fraction_mul_div', name: '分数のかけ算・わり算' },
-                        { id: 'ratio', name: '比と比の値' },
-                        { id: 'algebraic_expression_elem', name: '文字と式 (xを求める)' },
-                        { id: 'complex_mixed_operations', name: '四則混合計算 (応用)' },
-                        { id: 'reverse_calculation', name: '逆算の練習' },
-                    ]
-                }
-            ];
-
-            const [selectedUnits, setSelectedUnits] = useState(['add_sub_3d', 'division_2d', 'decimal_mul_div', 'fraction_mul_div']);
-            const [count, setCount] = useState(10);
-            const [difficulty, setDifficulty] = useState('normal');
-            const [problems, setProblems] = useState([]);
-            const [showAnswers, setShowAnswers] = useState(false);
-            const [error, setError] = useState('');
-            const [theme, setTheme] = useState('お買い物');
-            const [isGeneratingWordProblems, setIsGeneratingWordProblems] = useState(false);
-
-            const toggleUnit = (unitId) => {
-                setSelectedUnits(prev => {
-                    if (prev.includes(unitId)) return prev.filter(id => id !== unitId);
-                    return [...prev, unitId];
-                });
-            };
-
-            const toggleAll = () => {
-                const allIds = unitsGrouped.flatMap(g => g.items.map(i => i.id));
-                if (selectedUnits.length === allIds.length) {
-                    setSelectedUnits([]);
-                } else {
-                    setSelectedUnits(allIds);
-                }
-            };
-
-            const fetchWithRetry = async (url, options, retries = 5) => {
-                const delays = [1000, 2000, 4000, 8000, 16000];
-                for (let i = 0; i < retries; i++) {
-                    try {
-                        const response = await fetch(url, options);
-                        if (!response.ok) {
-                            const errorData = await response.json();
-                            throw new Error(errorData.error?.message || 'API Error');
-                        }
-                        return await response.json();
-                    } catch (error) {
-                        if (i === retries - 1) throw error;
-                        await new Promise(resolve => setTimeout(resolve, delays[i]));
+const renderContent = (str) => {
+    if (!str) return null;
+    
+    let processedStr = str.replace(/\\times/g, '×').replace(/\\div/g, '÷');
+    const tokens = processedStr.split(/(\\frac{[^{}]+}{[^{}]+}|\\sqrt{[^{}]+})/g);
+    
+    return (
+        <span className="inline-flex items-center flex-wrap leading-loose">
+            {tokens.map((token, i) => {
+                if (token.startsWith('\\frac')) {
+                    const match = /\\frac{([^{}]+)}{([^{}]+)}/.exec(token);
+                    if (match) {
+                        return (
+                            <span key={i} className="inline-flex flex-col items-center justify-center align-middle mx-1.5 -translate-y-1">
+                                <span className="border-b border-gray-800 px-1 text-[0.8em] leading-none pb-0.5">{renderSimpleMath(match[1])}</span>
+                                <span className="text-[0.8em] leading-none pt-0.5">{renderSimpleMath(match[2])}</span>
+                            </span>
+                        );
+                    }
+                } else if (token.startsWith('\\sqrt')) {
+                    const match = /\\sqrt{([^{}]+)}/.exec(token);
+                    if (match) {
+                        return (
+                            <span key={i} className="whitespace-nowrap inline-flex items-center mx-0.5">
+                                <span className="text-[1.1em] leading-none -mr-[1px] translate-y-[2px]">&radic;</span>
+                                <span className="border-t border-gray-800 pt-[1px] leading-none tracking-normal pr-0.5">{renderSimpleMath(match[1])}</span>
+                            </span>
+                        );
                     }
                 }
-            };
+                return <span key={i} className="inline-block leading-relaxed">{renderSimpleMath(token)}</span>;
+            })}
+        </span>
+    );
+};
 
-            const generateWordProblemsWithGemini = async () => {
-                if (selectedUnits.length === 0) {
-                    setError('1つ以上の単元を選択してください。');
-                    return;
+// --- Main App Component ---
+const App = () => {
+    const unitsGrouped = [
+        {
+            grade: '小学1年',
+            items: [
+                { id: 'add_sub_10', name: '10までのたし算・ひき算' },
+                { id: 'add_sub_carry', name: 'くり上がりのあるたし算・ひき算' },
+                { id: 'add_sub_3nums', name: '3つの数の計算' },
+            ]
+        },
+        {
+            grade: '小学2年',
+            items: [
+                { id: 'add_sub_2d', name: '2けたのたし算・ひき算' },
+                { id: 'multiplication_99', name: 'かけ算九九' },
+                { id: 'add_sub_bracket', name: 'かっこを使った計算' },
+            ]
+        },
+        {
+            grade: '小学3年',
+            items: [
+                { id: 'add_sub_3d', name: '3けた・4けたのたし算・ひき算' },
+                { id: 'multiplication_multi_digit', name: 'かけ算の筆算' },
+                { id: 'division_rem', name: 'あまりのあるわり算' },
+                { id: 'fraction_add_sub_same_den', name: '分数のたし算・ひき算 (同分母)' },
+                { id: 'decimal_add_sub_3rd', name: '小数のたし算・ひき算 (小3)' },
+            ]
+        },
+        {
+            grade: '小学4年',
+            items: [
+                { id: 'decimal_add_sub', name: '小数のたし算・ひき算' },
+                { id: 'division_2d', name: '2けたでわるわり算 (筆算)' },
+                { id: 'decimal_mul_div_int', name: '小数と整数の乗除' },
+                { id: 'mixed_operations', name: '四則混合計算' },
+            ]
+        },
+        {
+            grade: '小学5年',
+            items: [
+                { id: 'decimal_mul_div', name: '小数同士の乗除' },
+                { id: 'fraction_add_sub', name: '分数のたし算・ひき算 (異分母)' },
+                { id: 'gcd_lcm', name: '最大公約数・最小公倍数' },
+                { id: 'per_unit_quantity', name: '単位量あたりの大きさ' },
+            ]
+        },
+        {
+            grade: '小学6年・中学入試',
+            items: [
+                { id: 'fraction_mul_div', name: '分数のかけ算・わり算' },
+                { id: 'ratio', name: '比と比の値' },
+                { id: 'algebraic_expression_elem', name: '文字と式 (xを求める)' },
+                { id: 'complex_mixed_operations', name: '四則混合計算 (応用)' },
+                { id: 'reverse_calculation', name: '逆算の練習' },
+            ]
+        }
+    ];
+
+    const [selectedUnits, setSelectedUnits] = useState(['add_sub_3d', 'division_2d', 'decimal_mul_div', 'fraction_mul_div']);
+    const [count, setCount] = useState(10);
+    const [difficulty, setDifficulty] = useState('normal');
+    const [problems, setProblems] = useState([]);
+    const [showAnswers, setShowAnswers] = useState(false);
+    const [error, setError] = useState('');
+    const [theme, setTheme] = useState('お買い物');
+    const [isGeneratingWordProblems, setIsGeneratingWordProblems] = useState(false);
+
+    const toggleUnit = (unitId) => {
+        setSelectedUnits(prev => {
+            if (prev.includes(unitId)) return prev.filter(id => id !== unitId);
+            return [...prev, unitId];
+        });
+    };
+
+    const toggleAll = () => {
+        const allIds = unitsGrouped.flatMap(g => g.items.map(i => i.id));
+        if (selectedUnits.length === allIds.length) {
+            setSelectedUnits([]);
+        } else {
+            setSelectedUnits(allIds);
+        }
+    };
+
+    const fetchWithRetry = async (url, options) => {
+        const delays = [1000, 2000, 4000, 8000, 16000];
+        for (let i = 0; i < 5; i++) {
+            try {
+                const response = await fetch(url, options);
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error?.message || `HTTP Error ${response.status}`);
                 }
-                
-                setError('');
-                setIsGeneratingWordProblems(true);
-                setProblems([]);
+                return await response.json();
+            } catch (err) {
+                if (i === 4) throw err;
+                await new Promise(resolve => setTimeout(resolve, delays[i]));
+            }
+        }
+    };
 
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+    const generateWordProblemsWithGemini = async () => {
+        if (selectedUnits.length === 0) {
+            setError('1つ以上の単元を選択してください。');
+            return;
+        }
+        
+        setError('');
+        setIsGeneratingWordProblems(true);
+        setProblems([]);
 
-                const selectedUnitNames = unitsGrouped
-                    .flatMap(g => g.items)
-                    .filter(u => selectedUnits.includes(u.id))
-                    .map(u => u.name)
-                    .join(', ');
+        // 環境側で実行時にAPIキーが自動挿入されます
+        const apiKey = "";
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
 
-                const promptText = `以下の条件で、小学生向けの算数の文章題を作成してください。
+        const selectedUnitNames = unitsGrouped
+            .flatMap(g => g.items)
+            .filter(u => selectedUnits.includes(u.id))
+            .map(u => u.name)
+            .join(', ');
+
+        const promptText = `以下の条件で、小学生向けの算数の文章題を作成してください。
 - 関連する単元: ${selectedUnitNames}
 - 難易度: ${difficulty}
 - テーマ: ${theme}
@@ -1041,309 +988,321 @@
 問題文にはLaTeX形式の数式を使わず、プレーンテキストまたは通常の記号を使ってください。分数などが必要な場合は \\frac{1}{2} のように書いてください。
 答えは簡潔に書いてください。`;
 
-                const payload = {
-                    contents: [{ parts: [{ text: promptText }] }],
-                    systemInstruction: {
-                        parts: [{ text: "あなたはプロの小学校の算数教師です。小学生が楽しく解ける文章題を生成してください。" }]
+        const payload = {
+            contents: [{ parts: [{ text: promptText }] }],
+            systemInstruction: {
+                parts: [{ text: "あなたはプロの小学校の算数教師です。小学生が楽しく解ける文章題を生成してください。" }]
+            },
+            generationConfig: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: "OBJECT",
+                    properties: {
+                        problems: {
+                            type: "ARRAY",
+                            items: {
+                                type: "OBJECT",
+                                properties: {
+                                    q: { type: "STRING", description: "問題文" },
+                                    a: { type: "STRING", description: "解答" }
+                                },
+                                required: ["q", "a"]
+                            }
+                        }
                     },
-                    generationConfig: {
-                        responseMimeType: "application/json",
-                        responseSchema: {
-                            type: "OBJECT",
-                            properties: {
-                                problems: {
-                                    type: "ARRAY",
-                                    items: {
-                                        type: "OBJECT",
-                                        properties: {
-                                            q: { type: "STRING", description: "問題文" },
-                                            a: { type: "STRING", description: "解答" }
-                                        },
-                                        required: ["q", "a"]
-                                    }
-                                }
-                            },
-                            required: ["problems"]
-                        }
-                    }
-                };
-
-                try {
-                    const result = await fetchWithRetry(url, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-
-                    const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
-                    if (text) {
-                        const data = JSON.parse(text);
-                        if (data.problems && data.problems.length > 0) {
-                            setProblems(data.problems);
-                            setShowAnswers(false);
-                        } else {
-                            setError('文章題の生成に失敗しました。');
-                        }
-                    } else {
-                        setError('文章題の生成に失敗しました。');
-                    }
-                } catch (err) {
-                    setError('通信エラーが発生しました: ' + err.message);
-                } finally {
-                    setIsGeneratingWordProblems(false);
+                    required: ["problems"]
                 }
-            };
+            }
+        };
 
-            const generate = () => {
-                if (selectedUnits.length === 0) {
-                    setError('1つ以上の単元を選択してください。');
-                    setProblems([]);
-                    return;
-                }
-                setError('');
+        try {
+            const result = await fetchWithRetry(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
 
-                const newProblems = [];
-                let attempts = 0;
-                const maxAttempts = count * 50; 
-
-                while (newProblems.length < count && attempts < maxAttempts) {
-                    const randomUnitId = selectedUnits[Math.floor(Math.random() * selectedUnits.length)];
-                    const newProblem = generators[randomUnitId](difficulty);
-                    
-                    const isDuplicate = newProblems.some(p => p.q === newProblem.q);
-                    if (!isDuplicate) {
-                        newProblems.push(newProblem);
-                    }
-                    attempts++;
-                }
-
-                while (newProblems.length < count) {
-                    const randomUnitId = selectedUnits[Math.floor(Math.random() * selectedUnits.length)];
-                    let newProblem = generators[randomUnitId](difficulty);
-                    let suffix = " ".repeat(newProblems.length); 
-                    newProblems.push({ q: newProblem.q + suffix, a: newProblem.a });
-                }
-
-                setProblems(newProblems);
-                setShowAnswers(false);
-            };
-
-            useEffect(() => {
-                if (selectedUnits.length > 0) {
-                    generate();
+            const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (text) {
+                const data = JSON.parse(text);
+                if (data.problems && data.problems.length > 0) {
+                    setProblems(data.problems);
+                    setShowAnswers(false);
                 } else {
-                    setProblems([]);
-                    setError('1つ以上の単元を選択してください。');
+                    setError('文章題の生成に失敗しました。');
                 }
-            }, [selectedUnits, count, difficulty]);
+            } else {
+                setError('文章題の生成に失敗しました。');
+            }
+        } catch (err) {
+            setError(`通信エラーが発生しました: ${err.message}`);
+        } finally {
+            setIsGeneratingWordProblems(false);
+        }
+    };
 
-            const print = () => window.print();
+    const generate = () => {
+        if (selectedUnits.length === 0) {
+            setError('1つ以上の単元を選択してください。');
+            setProblems([]);
+            return;
+        }
+        setError('');
 
-            const getTestTitle = () => {
-                if (selectedUnits.length === 1) {
-                    const allItems = unitsGrouped.flatMap(g => g.items);
-                    return allItems.find(u => u.id === selectedUnits[0])?.name + ' 小テスト';
+        const newProblems = [];
+        let attempts = 0;
+        const maxAttempts = count * 50; 
+
+        while (newProblems.length < count && attempts < maxAttempts) {
+            const randomUnitId = selectedUnits[Math.floor(Math.random() * selectedUnits.length)];
+            const newProblem = generators[randomUnitId](difficulty);
+            
+            const isDuplicate = newProblems.some(p => p.q === newProblem.q);
+            if (!isDuplicate) {
+                newProblems.push(newProblem);
+            }
+            attempts++;
+        }
+
+        while (newProblems.length < count) {
+            const randomUnitId = selectedUnits[Math.floor(Math.random() * selectedUnits.length)];
+            let newProblem = generators[randomUnitId](difficulty);
+            let suffix = " ".repeat(newProblems.length); 
+            newProblems.push({ q: newProblem.q + suffix, a: newProblem.a });
+        }
+
+        setProblems(newProblems);
+        setShowAnswers(false);
+    };
+
+    useEffect(() => {
+        if (selectedUnits.length > 0) {
+            generate();
+        } else {
+            setProblems([]);
+            setError('1つ以上の単元を選択してください。');
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedUnits, count, difficulty]);
+
+    const print = () => window.print();
+
+    const getTestTitle = () => {
+        if (selectedUnits.length === 1) {
+            const allItems = unitsGrouped.flatMap(g => g.items);
+            return allItems.find(u => u.id === selectedUnits[0])?.name + ' 小テスト';
+        }
+        return '算数 総合復習プリント';
+    };
+
+    return (
+        <div className="min-h-screen bg-gray-100 p-4 sm:p-6 lg:p-8 font-sans text-gray-900 print:bg-white print:p-0">
+            {/* 印刷およびスクロールバー用CSS */}
+            <style>{`
+                @media print {
+                    body { background-color: white; }
+                    .print\\:hidden { display: none !important; }
+                    .print\\:block { display: block !important; }
+                    .print\\:p-0 { padding: 0 !important; }
+                    .print\\:m-0 { margin: 0 !important; }
+                    .print\\:shadow-none { box-shadow: none !important; }
+                    .print\\:max-w-none { max-width: none !important; }
                 }
-                return '算数 総合復習プリント';
-            };
+                .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+                .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+                .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+            `}</style>
+            
+            <div className="max-w-[1400px] mx-auto flex flex-col lg:flex-row gap-6 lg:gap-8 print:block print:max-w-none print:mx-0">
+                {/* 左側コントロールパネル (印刷時非表示) */}
+                <div className="w-full lg:w-[320px] shrink-0 print:hidden">
+                    <div className="bg-white p-5 sm:p-6 rounded-xl shadow-md lg:sticky lg:top-8 lg:max-h-[calc(100vh-4rem)] overflow-y-auto flex flex-col gap-6 custom-scrollbar">
+                        <div>
+                            <h1 className="text-xl font-bold text-gray-800 mb-1">算数 小テスト作成ツール</h1>
+                            <p className="text-xs text-gray-500 leading-relaxed">設定を変更すると、右側のプリントにリアルタイムで問題が自動生成されます。</p>
+                        </div>
 
-            return (
-                <div className="min-h-screen bg-gray-100 p-4 sm:p-6 lg:p-8 font-sans text-gray-900 print:bg-white print:p-0">
-                    <div className="max-w-[1400px] mx-auto flex flex-col lg:flex-row gap-6 lg:gap-8 print:block print:max-w-none print:mx-0">
-                        
-                        {/* 左側コントロールパネル (印刷時非表示) */}
-                        <div className="w-full lg:w-[320px] shrink-0 print:hidden">
-                            <div className="bg-white p-5 sm:p-6 rounded-xl shadow-md lg:sticky lg:top-8 lg:max-h-[calc(100vh-4rem)] overflow-y-auto flex flex-col gap-6 custom-scrollbar">
-                                <div>
-                                    <h1 className="text-xl font-bold text-gray-800 mb-1">算数 小テスト作成ツール</h1>
-                                    <p className="text-xs text-gray-500 leading-relaxed">設定を変更すると、右側のプリントにリアルタイムで問題が自動生成されます。</p>
-                                </div>
-
-                                {/* 単元選択 */}
-                                <div>
-                                    <div className="flex justify-between items-end mb-2">
-                                        <label className="block text-sm font-bold text-gray-700">出題単元</label>
-                                        <button onClick={toggleAll} className="text-xs text-blue-600 hover:text-blue-800 font-medium">
-                                            {selectedUnits.length >= 10 ? 'すべて解除' : 'すべて選択'}
-                                        </button>
+                        {/* 単元選択 */}
+                        <div>
+                            <div className="flex justify-between items-end mb-2">
+                                <label className="block text-sm font-bold text-gray-700">出題単元</label>
+                                <button onClick={toggleAll} className="text-xs text-blue-600 hover:text-blue-800 font-medium">
+                                    {selectedUnits.length >= 10 ? 'すべて解除' : 'すべて選択'}
+                                </button>
+                            </div>
+                            
+                            <div className="space-y-3">
+                                {unitsGrouped.map((group, idx) => (
+                                    <div key={idx} className="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                                        <h3 className="text-xs font-bold text-gray-500 mb-2 border-b pb-1">{group.grade}</h3>
+                                        <div className="flex flex-col gap-1">
+                                            {group.items.map(u => (
+                                                <label key={u.id} className="flex items-center p-1.5 rounded hover:bg-gray-200 cursor-pointer transition-colors">
+                                                    <input 
+                                                        type="checkbox" 
+                                                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                        checked={selectedUnits.includes(u.id)}
+                                                        onChange={() => toggleUnit(u.id)}
+                                                    />
+                                                    <span className="ml-2 text-sm text-gray-700 font-medium">{u.name}</span>
+                                                </label>
+                                            ))}
+                                        </div>
                                     </div>
-                                    
-                                    <div className="space-y-3">
-                                        {unitsGrouped.map((group, idx) => (
-                                            <div key={idx} className="bg-gray-50 p-3 rounded-lg border border-gray-200">
-                                                <h3 className="text-xs font-bold text-gray-500 mb-2 border-b pb-1">{group.grade}</h3>
-                                                <div className="flex flex-col gap-1">
-                                                    {group.items.map(u => (
-                                                        <label key={u.id} className="flex items-center p-1.5 rounded hover:bg-gray-200 cursor-pointer transition-colors">
-                                                            <input 
-                                                                type="checkbox" 
-                                                                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                                                checked={selectedUnits.includes(u.id)}
-                                                                onChange={() => toggleUnit(u.id)}
-                                                            />
-                                                            <span className="ml-2 text-sm text-gray-700 font-medium">{u.name}</span>
-                                                        </label>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    {error && <p className="text-red-500 text-xs mt-2 font-bold">{error}</p>}
-                                </div>
+                                ))}
+                            </div>
+                            {error && <p className="text-red-500 text-xs mt-2 font-bold">{error}</p>}
+                        </div>
 
-                                {/* 難易度と問題数 */}
-                                <div className="space-y-4 border-t pt-4 border-gray-100">
-                                    <div>
-                                        <label className="block text-sm font-bold text-gray-700 mb-1">難易度</label>
-                                        <select 
-                                            value={difficulty} 
-                                            onChange={(e) => setDifficulty(e.target.value)}
-                                            className="w-full bg-gray-50 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-2.5 outline-none transition-shadow text-sm font-medium"
-                                        >
-                                            <option value="easy">基本</option>
-                                            <option value="normal">標準</option>
-                                            <option value="hard">応用</option>
-                                        </select>
-                                    </div>
+                        {/* 難易度と問題数 */}
+                        <div className="space-y-4 border-t pt-4 border-gray-100">
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-1">難易度</label>
+                                <select 
+                                    value={difficulty} 
+                                    onChange={(e) => setDifficulty(e.target.value)}
+                                    className="w-full bg-gray-50 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-2.5 outline-none transition-shadow text-sm font-medium"
+                                >
+                                    <option value="easy">基本</option>
+                                    <option value="normal">標準</option>
+                                    <option value="hard">応用</option>
+                                </select>
+                            </div>
 
-                                    <div>
-                                        <label className="block text-sm font-bold text-gray-700 mb-1">問題数</label>
-                                        <select 
-                                            value={count} 
-                                            onChange={(e) => setCount(Number(e.target.value))}
-                                            className="w-full bg-gray-50 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-2.5 outline-none transition-shadow text-sm font-medium"
-                                        >
-                                            <option value={5}>5問</option>
-                                            <option value={10}>10問 (約10分)</option>
-                                            <option value={15}>15問</option>
-                                            <option value={20}>20問</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                {/* アクションボタン */}
-                                <div className="space-y-2.5 border-t pt-4 border-gray-100">
-                                    <button 
-                                        onClick={generate}
-                                        disabled={selectedUnits.length === 0 || isGeneratingWordProblems}
-                                        className="w-full flex items-center justify-center gap-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium py-2.5 px-4 rounded-lg transition-colors text-sm border border-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        <RefreshIcon />
-                                        計算問題を生成
-                                    </button>
-
-                                    <button 
-                                        onClick={() => setShowAnswers(!showAnswers)}
-                                        disabled={selectedUnits.length === 0 || isGeneratingWordProblems}
-                                        className="w-full flex items-center justify-center gap-1.5 bg-gray-50 hover:bg-gray-100 text-gray-700 font-medium py-2.5 px-4 rounded-lg transition-colors text-sm border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        {showAnswers ? <EyeOffIcon /> : <EyeIcon />}
-                                        {showAnswers ? '解答を隠す' : '解答を表示'}
-                                    </button>
-
-                                    <button 
-                                        onClick={print}
-                                        disabled={selectedUnits.length === 0}
-                                        className="w-full flex items-center justify-center gap-1.5 bg-gray-800 hover:bg-gray-900 text-white font-medium py-2.5 px-4 rounded-lg transition-colors text-sm shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        <PrinterIcon />
-                                        プリントを印刷
-                                    </button>
-                                </div>
-
-                                {/* Gemini API機能 */}
-                                <div className="space-y-4 border-t pt-4 border-gray-100">
-                                    <div>
-                                        <h3 className="text-sm font-bold text-gray-800 mb-1 flex items-center gap-1">
-                                            <span className="text-purple-600">✨</span> AIで文章題を作成
-                                        </h3>
-                                        <p className="text-xs text-gray-500 mb-3">選択した単元とテーマを組み合わせて文章題を作ります。</p>
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-700 mb-1">テーマ</label>
-                                        <input 
-                                            type="text"
-                                            value={theme}
-                                            onChange={(e) => setTheme(e.target.value)}
-                                            placeholder="例: お買い物、動物、宇宙など"
-                                            className="w-full bg-gray-50 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 p-2.5 outline-none transition-shadow text-sm font-medium"
-                                        />
-                                    </div>
-                                    <button 
-                                        onClick={generateWordProblemsWithGemini}
-                                        disabled={selectedUnits.length === 0 || isGeneratingWordProblems}
-                                        className="w-full flex items-center justify-center gap-1.5 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-medium py-2.5 px-4 rounded-lg transition-all text-sm shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        {isGeneratingWordProblems ? (
-                                            <span className="animate-pulse">生成中...</span>
-                                        ) : (
-                                            <span>文章題を生成✨</span>
-                                        )}
-                                    </button>
-                                </div>
-
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-1">問題数</label>
+                                <select 
+                                    value={count} 
+                                    onChange={(e) => setCount(Number(e.target.value))}
+                                    className="w-full bg-gray-50 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-2.5 outline-none transition-shadow text-sm font-medium"
+                                >
+                                    <option value={5}>5問</option>
+                                    <option value={10}>10問 (約10分)</option>
+                                    <option value={15}>15問</option>
+                                    <option value={20}>20問</option>
+                                </select>
                             </div>
                         </div>
 
-                        {/* 右側 プリントプレビュー */}
-                        <div className="flex-1 flex justify-center print:block">
-                            <div className="w-full max-w-4xl bg-white p-8 sm:p-12 md:p-16 rounded-xl shadow-md print:shadow-none print:p-0 min-h-[297mm]">
-                                
-                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end border-b-2 border-gray-800 pb-4 mb-8 sm:mb-10 gap-4">
-                                    <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">
-                                        {getTestTitle()}
-                                    </h2>
-                                    <div className="flex gap-3 sm:gap-4 text-sm sm:text-base font-medium text-gray-800 shrink-0">
-                                        <div className="border-b border-gray-400 w-12 sm:w-16 text-center pb-1">　年</div>
-                                        <div className="border-b border-gray-400 w-12 sm:w-16 text-center pb-1">　組</div>
-                                        <div className="border-b border-gray-400 w-12 sm:w-16 text-center pb-1">　番</div>
-                                        <div className="border-b border-gray-400 w-24 sm:w-40 pb-1">氏名</div>
-                                    </div>
-                                </div>
+                        {/* アクションボタン */}
+                        <div className="space-y-2.5 border-t pt-4 border-gray-100">
+                            <button 
+                                onClick={generate}
+                                disabled={selectedUnits.length === 0 || isGeneratingWordProblems}
+                                className="w-full flex items-center justify-center gap-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium py-2.5 px-4 rounded-lg transition-colors text-sm border border-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <RefreshIcon />
+                                計算問題を生成
+                            </button>
 
-                                {isGeneratingWordProblems ? (
-                                    <div className="flex flex-col items-center justify-center h-64 text-purple-600 gap-4">
-                                        <div className="animate-spin text-4xl">✨</div>
-                                        <div className="text-lg font-bold animate-pulse">AIが文章題を考えています...</div>
-                                    </div>
-                                ) : problems.length > 0 ? (
-                                    <div className="grid gap-x-8 sm:gap-x-12 md:gap-x-16 gap-y-8 sm:gap-y-12 grid-cols-1 md:grid-cols-2">
-                                        {problems.map((p, i) => (
-                                            <div key={i} className="flex gap-3 sm:gap-4 break-inside-avoid">
-                                                <div className="font-bold text-lg sm:text-xl text-gray-800 w-6 sm:w-8 shrink-0 mt-0.5">({i + 1})</div>
-                                                <div className="flex flex-col gap-4 sm:gap-6 w-full">
-                                                    <div className="min-h-[2.5rem] flex items-center text-gray-900 text-base sm:text-lg">
-                                                        {renderContent(p.q)}
-                                                    </div>
-                                                    
-                                                    {showAnswers ? (
-                                                        <div className="text-red-600 font-bold border-b-2 border-red-200 pb-2 pl-2 text-base sm:text-lg mt-auto">
-                                                            答. {renderContent(p.a)}
-                                                        </div>
-                                                    ) : (
-                                                        <div className="border-b border-dashed border-gray-400 pb-2 h-6 sm:h-8 w-full mt-auto"></div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="flex items-center justify-center h-64 text-gray-400 text-lg">
-                                        {error ? '左のパネルから単元を選択してください。' : '問題を生成しています...'}
-                                    </div>
-                                )}
-                                
+                            <button 
+                                onClick={() => setShowAnswers(!showAnswers)}
+                                disabled={selectedUnits.length === 0 || isGeneratingWordProblems}
+                                className="w-full flex items-center justify-center gap-1.5 bg-gray-50 hover:bg-gray-100 text-gray-700 font-medium py-2.5 px-4 rounded-lg transition-colors text-sm border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {showAnswers ? <EyeOffIcon /> : <EyeIcon />}
+                                {showAnswers ? '解答を隠す' : '解答を表示'}
+                            </button>
+
+                            <button 
+                                onClick={print}
+                                disabled={selectedUnits.length === 0}
+                                className="w-full flex items-center justify-center gap-1.5 bg-gray-800 hover:bg-gray-900 text-white font-medium py-2.5 px-4 rounded-lg transition-colors text-sm shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <PrinterIcon />
+                                プリントを印刷
+                            </button>
+                        </div>
+
+                        {/* Gemini API機能 */}
+                        <div className="space-y-4 border-t pt-4 border-gray-100">
+                            <div>
+                                <h3 className="text-sm font-bold text-gray-800 mb-1 flex items-center gap-1">
+                                    <span className="text-purple-600">✨</span> AIで文章題を作成
+                                </h3>
+                                <p className="text-xs text-gray-500 mb-3">選択した単元とテーマを組み合わせて文章題を作ります。</p>
                             </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 mb-1">テーマ</label>
+                                <input 
+                                    type="text"
+                                    value={theme}
+                                    onChange={(e) => setTheme(e.target.value)}
+                                    placeholder="例: お買い物、動物、宇宙など"
+                                    className="w-full bg-gray-50 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 p-2.5 outline-none transition-shadow text-sm font-medium"
+                                />
+                            </div>
+                            <button 
+                                onClick={generateWordProblemsWithGemini}
+                                disabled={selectedUnits.length === 0 || isGeneratingWordProblems}
+                                className="w-full flex items-center justify-center gap-1.5 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-medium py-2.5 px-4 rounded-lg transition-all text-sm shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {isGeneratingWordProblems ? (
+                                    <span className="animate-pulse">生成中...</span>
+                                ) : (
+                                    <span>文章題を生成✨</span>
+                                )}
+                            </button>
                         </div>
 
                     </div>
                 </div>
-            );
-        }
 
-        // Reactアプリのレンダリング
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
-</body>
-</html>
+                {/* 右側 プリントプレビュー */}
+                <div className="flex-1 flex justify-center print:block">
+                    <div className="w-full max-w-4xl bg-white p-8 sm:p-12 md:p-16 rounded-xl shadow-md print:shadow-none print:p-0 min-h-[297mm]">
+                        
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end border-b-2 border-gray-800 pb-4 mb-8 sm:mb-10 gap-4">
+                            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">
+                                {getTestTitle()}
+                            </h2>
+                            <div className="flex gap-3 sm:gap-4 text-sm sm:text-base font-medium text-gray-800 shrink-0">
+                                <div className="border-b border-gray-400 w-12 sm:w-16 text-center pb-1">　年</div>
+                                <div className="border-b border-gray-400 w-12 sm:w-16 text-center pb-1">　組</div>
+                                <div className="border-b border-gray-400 w-12 sm:w-16 text-center pb-1">　番</div>
+                                <div className="border-b border-gray-400 w-24 sm:w-40 pb-1">氏名</div>
+                            </div>
+                        </div>
+
+                        {isGeneratingWordProblems ? (
+                            <div className="flex flex-col items-center justify-center h-64 text-purple-600 gap-4">
+                                <div className="animate-spin text-4xl">✨</div>
+                                <div className="text-lg font-bold animate-pulse">AIが文章題を考えています...</div>
+                            </div>
+                        ) : problems.length > 0 ? (
+                            <div className="grid gap-x-8 sm:gap-x-12 md:gap-x-16 gap-y-8 sm:gap-y-12 grid-cols-1 md:grid-cols-2">
+                                {problems.map((p, i) => (
+                                    <div key={i} className="flex gap-3 sm:gap-4 break-inside-avoid">
+                                        <div className="font-bold text-lg sm:text-xl text-gray-800 w-6 sm:w-8 shrink-0 mt-0.5">({i + 1})</div>
+                                        <div className="flex flex-col gap-4 sm:gap-6 w-full">
+                                            <div className="min-h-[2.5rem] flex items-center text-gray-900 text-base sm:text-lg">
+                                                {renderContent(p.q)}
+                                            </div>
+                                            
+                                            {showAnswers ? (
+                                                <div className="text-red-600 font-bold border-b-2 border-red-200 pb-2 pl-2 text-base sm:text-lg mt-auto">
+                                                    答. {renderContent(p.a)}
+                                                </div>
+                                            ) : (
+                                                <div className="border-b border-dashed border-gray-400 pb-2 h-6 sm:h-8 w-full mt-auto"></div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="flex items-center justify-center h-64 text-gray-400 text-lg">
+                                {error ? '左のパネルから単元を選択してください。' : '問題を生成しています...'}
+                            </div>
+                        )}
+                        
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    );
+};
+
+export default App;
